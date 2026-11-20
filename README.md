@@ -1,5 +1,7 @@
 # 🎧 YouTube AI Voice Dubber (Thuyết minh YouTube thời gian thực)
 
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/b595c551-5790-4f9f-bbe5-e4b942ad0316" />
+
 Tiện ích mở rộng (Chrome / Edge / Brave) giúp tự động dịch phụ đề và lồng tiếng video YouTube theo thời gian thực với giọng đọc AI tự nhiên — **miễn phí, không giới hạn thời lượng, chạy trực tiếp trên trình duyệt**.
 
 ## ✨ Tính năng nổi bật
