@@ -1,0 +1,8 @@
+.DS_Store
+Thumbs.db
+*.zip
+*.crx
+*.pem
+deploy.ps1
+.vscode/
+.idea/

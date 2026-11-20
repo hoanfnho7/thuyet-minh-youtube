@@ -1,0 +1,352 @@
+.yt-dub-player-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 40px !important;
+  height: 100% !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.88) !important;
+  cursor: pointer !important;
+  vertical-align: top !important;
+  transition: color 0.15s ease, transform 0.15s ease !important;
+}
+
+.yt-dub-player-btn:hover {
+  color: #ffffff !important;
+  transform: scale(1.06);
+}
+
+.yt-dub-player-btn.active {
+  color: #38bdf8 !important;
+  filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.65));
+}
+
+.yt-dub-player-btn svg,
+.yt-dub-shorts-btn svg {
+  width: 22px !important;
+  height: 22px !important;
+  display: block !important;
+  pointer-events: none !important;
+}
+
+.yt-dub-shorts-btn {
+  position: fixed;
+  right: 16px;
+  bottom: 90px;
+  z-index: 999998;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(15, 20, 32, 0.78);
+  backdrop-filter: blur(10px);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.yt-dub-shorts-btn.active {
+  color: #38bdf8;
+  border-color: #38bdf8;
+}
+
+#yt-dub-panel {
+  position: fixed;
+  top: 72px;
+  right: 20px;
+  z-index: 2147483647;
+  width: 236px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(15, 20, 32, 0.86);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  color: #f8fafc;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 12px;
+  line-height: 1.4;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+#yt-dub-panel.hidden {
+  display: none !important;
+}
+
+.yt-dub-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  cursor: move;
+}
+
+.yt-dub-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 13px;
+  color: #f8fafc;
+}
+
+.yt-dub-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #64748b;
+}
+
+.yt-dub-dot.on {
+  background: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.8);
+}
+
+.yt-dub-close {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 6px;
+}
+
+.yt-dub-close:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.yt-dub-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 9px;
+}
+
+.yt-dub-row label {
+  color: #cbd5e1;
+  font-size: 12px;
+}
+
+.yt-dub-select {
+  background: rgba(30, 41, 59, 0.9);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 12px;
+  outline: none;
+  max-width: 145px;
+  cursor: pointer;
+}
+
+.yt-dub-slider-group {
+  margin-bottom: 9px;
+}
+
+.yt-dub-slider-label {
+  display: flex;
+  justify-content: space-between;
+  color: #cbd5e1;
+  font-size: 11.5px;
+  margin-bottom: 3px;
+}
+
+.yt-dub-slider {
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.18);
+  outline: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.yt-dub-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #38bdf8;
+  cursor: pointer;
+}
+
+.yt-dub-main-btn {
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  background: #2563eb;
+  color: #fff;
+  transition: background 0.15s ease;
+}
+
+.yt-dub-main-btn:hover {
+  background: #3b82f6;
+}
+
+.yt-dub-main-btn.active {
+  background: #ef4444;
+}
+
+.yt-dub-main-btn.active:hover {
+  background: #f87171;
+}
+
+.yt-dub-status {
+  margin-top: 8px;
+  font-size: 11px;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===== BẢNG KỊCH BẢN SONG NGỮ + KARAOKE ===== */
+.yt-dub-sub-btn {
+  width: 100%;
+  margin-top: 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.yt-dub-sub-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.yt-dub-sub-btn.active {
+  background: rgba(56, 189, 248, 0.22);
+  border-color: #38bdf8;
+  color: #38bdf8;
+}
+
+#yt-dub-script-panel {
+  position: fixed;
+  right: 20px;
+  bottom: 80px;
+  z-index: 2147483646;
+  width: 360px;
+  height: 280px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+  background: rgba(15, 20, 32, 0.84);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.55);
+  color: #f8fafc;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  overflow: hidden;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+#yt-dub-script-panel.hidden {
+  display: none !important;
+}
+
+.yt-dub-script-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: move;
+}
+
+.yt-dub-script-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 10px;
+  scrollbar-width: none;
+}
+
+.yt-dub-script-body::-webkit-scrollbar {
+  display: none;
+}
+
+.yt-dub-script-item {
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  border-radius: 10px;
+  border-left: 3px solid transparent;
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  opacity: 0.62;
+  transition: background 0.2s ease, opacity 0.2s ease, border-color 0.2s ease;
+}
+
+.yt-dub-script-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  opacity: 0.92;
+}
+
+.yt-dub-script-item.current {
+  opacity: 1;
+  border-left-color: #38bdf8;
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.18), rgba(255, 255, 255, 0.08));
+}
+
+.yt-dub-script-orig {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: rgba(125, 211, 252, 0.9);
+  margin-bottom: 3px;
+}
+
+.yt-dub-script-trans {
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+/* Hiệu ứng chữ Karaoke */
+.yt-dub-script-item .w {
+  display: inline-block;
+  margin-right: 3px;
+  transition: color 0.12s ease, transform 0.12s ease;
+}
+
+.yt-dub-script-item.current .w.pending {
+  opacity: 0.4;
+}
+
+.yt-dub-script-item.current .w.active {
+  opacity: 1;
+  color: #ffffff;
+  text-shadow: 0 0 10px rgba(56, 189, 248, 0.9);
+  transform: scale(1.06);
+}
+
+.yt-dub-script-item.current .yt-dub-script-orig .w.active {
+  color: #38bdf8;
+}
+
+.yt-dub-script-item.current .w.done {
+  opacity: 1;
+}

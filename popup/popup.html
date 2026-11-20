@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Thuyết Minh YouTube</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      width: 300px;
+      padding: 16px;
+      background: #0f172a;
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 12px;
+      margin-bottom: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .header h1 { font-size: 15px; font-weight: 700; color: #38bdf8; }
+    .badge {
+      font-size: 11px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      font-weight: 600;
+    }
+    .guide {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      font-size: 12px;
+      color: #cbd5e1;
+    }
+    .guide p { margin-bottom: 6px; }
+    .guide p:last-child { margin-bottom: 0; }
+    kbd {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-size: 11px;
+      color: #fff;
+    }
+    .byok-title {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #94a3b8;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .field { margin-bottom: 8px; }
+    .field input {
+      width: 100%;
+      padding: 7px 9px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      background: #1e293b;
+      color: #fff;
+      font-size: 12px;
+      outline: none;
+    }
+    .field input:focus { border-color: #38bdf8; }
+    .save-btn {
+      width: 100%;
+      padding: 8px;
+      border: none;
+      border-radius: 8px;
+      background: #2563eb;
+      color: #fff;
+      font-weight: 600;
+      font-size: 12.5px;
+      cursor: pointer;
+    }
+    .save-btn:hover { background: #3b82f6; }
+    .status {
+      margin-top: 6px;
+      text-align: center;
+      font-size: 11.5px;
+      color: #34d399;
+      min-height: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Thuyết Minh YouTube</h1>
+    <span class="badge">v1.0.0</span>
+  </div>
+
+  <div class="guide">
+    <p>1. Mở video YouTube bất kỳ có phụ đề.</p>
+    <p>2. Bấm icon <strong>Tai nghe</strong> trên thanh điều khiển video.</p>
+    <p>3. Phím tắt bật/tắt nhanh: <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd></p>
+  </div>
+
+  <div class="byok-title">API Key Dự Phòng (Tùy chọn)</div>
+  <div class="field">
+    <input type="password" id="openaiApiKey" placeholder="OpenAI API Key (sk-...) - Giọng Nova">
+  </div>
+  <div class="field">
+    <input type="password" id="googleApiKey" placeholder="Google Cloud Translate Key (AIza...)">
+  </div>
+  <button id="saveBtn" class="save-btn">Lưu cấu hình</button>
+  <div id="status" class="status"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
