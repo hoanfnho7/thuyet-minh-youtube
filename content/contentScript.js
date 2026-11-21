@@ -31,16 +31,6 @@
     ]
   };
 
-  const PRONOUN_OPTIONS = [
-    ["auto", "Tự động theo video"],
-    ["toi-ban", "Tôi - Bạn"],
-    ["toi-cacban", "Tôi - Các bạn"],
-    ["ong-chau", "Ông - Cháu"],
-    ["anh-em", "Anh - Em"],
-    ["thay-em", "Thầy - Em"],
-    ["tao-may", "Tao - Mày"]
-  ];
-
   const PRE_ENQUEUE_AHEAD_SEC = 5.0;
   const STALE_LOADING_MS = 14000;
   const audioQueue = new window.DubCore.DubAudioQueue();
@@ -52,18 +42,16 @@
     contextDead: false,
     lang: "vi",
     sourceLang: "en",
-    selectedSourceVssId: "", // "" = tự động chọn ngôn ngữ gốc của video
+    selectedSourceVssId: "",
     availableTracks: [],
-    videoTitle: "",
-    pronounStyle: "auto",
     voice: "vi-VN-NamMinhNeural",
-    speed: 1.35,
+    autoSpeed: true, // Mặc định: tự co giãn tốc độ khớp nhịp video
+    speed: 1.25,     // Tốc độ dùng khi người dùng tự kéo thanh trượt
     origVolume: 0.25,
     hasOpenAiKey: false,
     hasGoogleKey: false,
     segments: [],
-    rawTranslatedMap: new Map(), // Bản dịch thô trước khi áp dụng xưng hô
-    translatedMap: new Map(), // Bản dịch đã chỉnh xưng hô
+    translatedMap: new Map(),
     translatingMap: new Map(),
     translateCooldownUntil: 0,
     audioCache: new Map(),
@@ -96,20 +84,10 @@
 
   function applyAudioSettings() {
     audioQueue.setVolume(1.0);
+    audioQueue.setAutoPacing(state.autoSpeed);
     audioQueue.setBaseSpeed(state.speed);
     audioQueue.setProviderSpeedMultiplier(getProviderSpeedFactor(state.voice));
     if (state.video) audioQueue.setVideoPlaybackRate(state.video.playbackRate || 1);
-  }
-
-  function formatTranslatedText(rawText) {
-    if (!rawText) return "";
-    if (!state.lang.startsWith("vi")) return rawText;
-    return window.DubCore.applyVietnamesePronouns(
-      rawText,
-      state.pronounStyle,
-      state.videoTitle,
-      state.segments.slice(0, 12).map((s) => s.text)
-    );
   }
 
   function startKeepalive() {
@@ -292,9 +270,9 @@
           Object.assign(state, {
             lang: res.ytDubSettings.lang || "vi",
             voice: res.ytDubSettings.voice || "vi-VN-NamMinhNeural",
-            speed: res.ytDubSettings.speed || 1.35,
-            origVolume: res.ytDubSettings.origVolume ?? 0.25,
-            pronounStyle: res.ytDubSettings.pronounStyle || "auto"
+            autoSpeed: res.ytDubSettings.autoSpeed !== undefined ? Boolean(res.ytDubSettings.autoSpeed) : true,
+            speed: res.ytDubSettings.speed || 1.25,
+            origVolume: res.ytDubSettings.origVolume ?? 0.25
           });
         }
         state.hasOpenAiKey = Boolean(res?.byokConfig?.openaiApiKey?.trim());
@@ -315,9 +293,9 @@
         ytDubSettings: {
           lang: state.lang,
           voice: state.voice,
+          autoSpeed: state.autoSpeed,
           speed: state.speed,
-          origVolume: state.origVolume,
-          pronounStyle: state.pronounStyle
+          origVolume: state.origVolume
         }
       });
     } catch {
@@ -395,7 +373,6 @@
     });
     const header = el("div", { className: "yt-dub-header", id: "ytDubDragHeader" }, [title, closeBtn]);
 
-    // Chọn ngôn ngữ nguồn của video (mặc định gốc video, có thể đổi sang sub khác video có)
     const sourceSelect = el("select", { id: "ytDubSourceLang", className: "yt-dub-select" }, [
       el("option", { value: "", textContent: "Tự động (Gốc video)" })
     ]);
@@ -426,28 +403,29 @@
       voiceSelect
     ]);
 
-    const pronounSelect = el(
-      "select",
-      { id: "ytDubPronoun", className: "yt-dub-select" },
-      PRONOUN_OPTIONS.map(([val, label]) => el("option", { value: val, textContent: label }))
-    );
-    const pronounRow = el("div", { className: "yt-dub-row" }, [
-      el("label", { for: "ytDubPronoun", textContent: "Xưng hô" }),
-      pronounSelect
+    const speedResetBtn = el("button", {
+      id: "ytDubSpeedResetBtn",
+      className: "yt-dub-mini-btn active",
+      type: "button",
+      title: "Tự động điều chỉnh tốc độ khớp theo nhịp video",
+      textContent: "Mặc định"
+    });
+    const speedVal = el("span", { id: "ytDubSpeedVal", textContent: "Tự động" });
+    const speedRight = el("div", { style: "display:flex;align-items:center;gap:6px;" }, [
+      speedVal,
+      speedResetBtn
     ]);
-
-    const speedVal = el("span", { id: "ytDubSpeedVal", textContent: "1.35x" });
     const speedSlider = el("input", {
       id: "ytDubSpeed",
       className: "yt-dub-slider",
       type: "range",
-      min: "0.9",
+      min: "0.85",
       max: "1.8",
       step: "0.05",
-      value: "1.35"
+      value: "1.25"
     });
     const speedGroup = el("div", { className: "yt-dub-slider-group" }, [
-      el("div", { className: "yt-dub-slider-label" }, [el("span", { textContent: "Tốc độ tối đa" }), speedVal]),
+      el("div", { className: "yt-dub-slider-label" }, [el("span", { textContent: "Tốc độ đọc" }), speedRight]),
       speedSlider
     ]);
 
@@ -489,7 +467,6 @@
       sourceRow,
       langRow,
       voiceRow,
-      pronounRow,
       speedGroup,
       volGroup,
       mainBtn,
@@ -519,33 +496,6 @@
       if (state.enabled) startSession();
     };
 
-    pronounSelect.onchange = (e) => {
-      if (!checkContextAlive()) return;
-      state.pronounStyle = e.target.value;
-      saveSettings();
-      if (state.segments.length) {
-        // Cập nhật lại toàn bộ bản dịch đã có theo vai xưng hô mới
-        for (const [idx, rawTr] of state.rawTranslatedMap.entries()) {
-          const updated = formatTranslatedText(rawTr);
-          state.translatedMap.set(idx, updated);
-          updateScriptItemTranslation(idx, updated);
-        }
-        if (state.enabled) {
-          stopAudioAll();
-          clearAudioCache();
-          state.enqueuedSet.clear();
-          if (state.video) {
-            const t = state.video.currentTime;
-            for (let i = 0; i < state.segments.length; i++) {
-              if (state.segments[i].end < t - 0.3) state.enqueuedSet.add(i);
-            }
-            pipelineAhead(t, state.sessionToken);
-            syncPlayback();
-          }
-        }
-      }
-    };
-
     voiceSelect.onchange = (e) => {
       if (!checkContextAlive()) return;
       state.voice = e.target.value;
@@ -567,9 +517,18 @@
     };
 
     speedSlider.oninput = (e) => {
+      state.autoSpeed = false;
       state.speed = parseFloat(e.target.value);
-      speedVal.textContent = `${state.speed.toFixed(2)}x`;
+      audioQueue.setAutoPacing(false);
       audioQueue.setBaseSpeed(state.speed);
+      syncUI();
+      saveSettings();
+    };
+
+    speedResetBtn.onclick = () => {
+      state.autoSpeed = true;
+      audioQueue.setAutoPacing(true);
+      syncUI();
       saveSettings();
     };
 
@@ -842,13 +801,12 @@
     const langSel = document.getElementById("ytDubLang");
     if (langSel) langSel.value = state.lang;
 
-    const pSel = document.getElementById("ytDubPronoun");
-    if (pSel) pSel.value = state.pronounStyle;
-
     const sIn = document.getElementById("ytDubSpeed");
     if (sIn) sIn.value = String(state.speed);
     const sVal = document.getElementById("ytDubSpeedVal");
-    if (sVal) sVal.textContent = `${state.speed.toFixed(2)}x`;
+    if (sVal) sVal.textContent = state.autoSpeed ? "Tự động" : `${state.speed.toFixed(2)}x`;
+    const sReset = document.getElementById("ytDubSpeedResetBtn");
+    if (sReset) sReset.classList.toggle("active", state.autoSpeed);
 
     const vIn = document.getElementById("ytDubVol");
     if (vIn) vIn.value = String(Math.round(state.origVolume * 100));
@@ -997,11 +955,9 @@
     if (state.alreadyTranslated) {
       for (let i = 0; i < state.segments.length; i++) {
         if (!state.translatedMap.has(i)) {
-          const raw = state.segments[i].text;
-          state.rawTranslatedMap.set(i, raw);
-          const formatted = formatTranslatedText(raw);
-          state.translatedMap.set(i, formatted);
-          updateScriptItemTranslation(i, formatted);
+          const text = state.segments[i].text;
+          state.translatedMap.set(i, text);
+          updateScriptItemTranslation(i, text);
         }
       }
       return;
@@ -1020,7 +976,7 @@
       if (seg.start > currentTime + 80) break;
       if (!state.translatedMap.has(i) && !state.translatingMap.has(i)) {
         indices.push(i);
-        if (indices.length >= 10) break; // Gửi 10 câu/lần để giữ mạch ngữ cảnh hội thoại tốt hơn
+        if (indices.length >= 8) break;
       }
     }
 
@@ -1030,25 +986,16 @@
     try {
       const texts = indices.map((i) => state.segments[i].text);
       const res = await safeSendMessage(
-        {
-          action: "translateBatch",
-          texts,
-          targetLang: state.lang,
-          sourceLang: state.sourceLang,
-          videoTitle: state.videoTitle,
-          pronounStyle: state.pronounStyle
-        },
+        { action: "translateBatch", texts, targetLang: state.lang },
         14000
       );
       if (token !== state.sessionToken) return;
 
       if (res?.success && Array.isArray(res.data)) {
         indices.forEach((segIdx, pos) => {
-          const rawTr = res.data[pos] || state.segments[segIdx].text;
-          state.rawTranslatedMap.set(segIdx, rawTr);
-          const formatted = res.llmHandled ? rawTr : formatTranslatedText(rawTr);
-          state.translatedMap.set(segIdx, formatted);
-          updateScriptItemTranslation(segIdx, formatted);
+          const translated = res.data[pos] || state.segments[segIdx].text;
+          state.translatedMap.set(segIdx, translated);
+          updateScriptItemTranslation(segIdx, translated);
         });
         if (state.video) synthesizeAhead(state.video.currentTime, token);
       } else {
@@ -1330,34 +1277,23 @@
       const texts = targetIndices.map((i) => state.segments[i].text);
       try {
         const res = await safeSendMessage(
-          {
-            action: "translateBatch",
-            texts,
-            targetLang: state.lang,
-            sourceLang: state.sourceLang,
-            videoTitle: state.videoTitle,
-            pronounStyle: state.pronounStyle
-          },
+          { action: "translateBatch", texts, targetLang: state.lang },
           14000
         );
         if (token !== state.sessionToken) return;
         if (res?.success && Array.isArray(res.data)) {
           targetIndices.forEach((segIdx, pos) => {
-            const rawTr = res.data[pos] || state.segments[segIdx].text;
-            state.rawTranslatedMap.set(segIdx, rawTr);
-            const formatted = res.llmHandled ? rawTr : formatTranslatedText(rawTr);
-            state.translatedMap.set(segIdx, formatted);
-            updateScriptItemTranslation(segIdx, formatted);
+            const tr = res.data[pos] || state.segments[segIdx].text;
+            state.translatedMap.set(segIdx, tr);
+            updateScriptItemTranslation(segIdx, tr);
           });
         }
       } catch {}
     } else {
       targetIndices.forEach((segIdx) => {
-        const raw = state.segments[segIdx].text;
-        state.rawTranslatedMap.set(segIdx, raw);
-        const formatted = formatTranslatedText(raw);
-        state.translatedMap.set(segIdx, formatted);
-        updateScriptItemTranslation(segIdx, formatted);
+        const text = state.segments[segIdx].text;
+        state.translatedMap.set(segIdx, text);
+        updateScriptItemTranslation(segIdx, text);
       });
     }
 
@@ -1375,7 +1311,6 @@
     const token = ++state.sessionToken;
     stopAudioAll();
     state.segments = [];
-    state.rawTranslatedMap.clear();
     state.translatedMap.clear();
     state.translatingMap.clear();
     state.translateCooldownUntil = 0;
@@ -1395,12 +1330,11 @@
     const wasPlaying = !video.paused;
     setStatus("Đang lấy phụ đề...", "#fbbf24");
 
-try {
+    try {
       const res = await requestSubtitlesFromPage();
       if (token !== state.sessionToken || state.contextDead) return;
 
       state.sourceLang = res.sourceLang || "en";
-      state.videoTitle = res.videoTitle || "";
       state.availableTracks = Array.isArray(res.availableTracks) ? res.availableTracks : [];
       if (res.selectedVssId && !state.selectedSourceVssId) {
         state.selectedSourceVssId = res.selectedVssId;
@@ -1410,7 +1344,7 @@ try {
       state.alreadyTranslated = Boolean(res.translatedByYouTube);
       state.segments = mergeShortSegments(res.segments);
 
-      // Nếu video có sẵn track tiếng Việt do người dịch, ánh xạ trực tiếp theo mốc thời gian (giữ nguyên xưng hô ông - cháu)
+      // Nếu video có sẵn bản dịch tiếng Việt từ YouTube, ánh xạ trực tiếp theo mốc thời gian
       if (Array.isArray(res.nativeTargetSegments) && res.nativeTargetSegments.length > 0) {
         state.segments.forEach((seg, idx) => {
           const hits = res.nativeTargetSegments.filter(
@@ -1418,10 +1352,7 @@ try {
           );
           if (hits.length > 0) {
             const joined = hits.map((h) => h.text).join(" ").replace(/\s+/g, " ").trim();
-            if (joined) {
-              state.rawTranslatedMap.set(idx, joined);
-              state.translatedMap.set(idx, joined);
-            }
+            if (joined) state.translatedMap.set(idx, joined);
           }
         });
       }
@@ -1485,7 +1416,6 @@ try {
 
   window.addEventListener("YT_DUB_NAVIGATION", () => {
     if (!checkContextAlive()) return;
-    // Reset track nguồn về mặc định của video mới
     state.selectedSourceVssId = "";
     state.availableTracks = [];
     populateSourceTracks();

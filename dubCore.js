@@ -65,74 +65,6 @@
   const SPEAKER_LABEL_RE =
     /^(?:>>+\s*)?(?:(?:Narrator|Speaker(?:\s*\d+)?|Host|Co-Host|Guest(?:\s*\d+)?|Reporter|Interviewer|Interviewee|Announcer|Voiceover|Man|Woman|Người\s*dẫn(?:\s*chuyện)?|Người\s*thuyết\s*minh|Phóng\s*viên|Khách\s*mời)|[A-Z0-9À-Ỹ]{2,}(?:\s+[A-Z0-9À-Ỹ]{2,}){0,3}):\s+(?=[\p{L}\p{N}"“'‘(])/u;
 
-  // =========================================================================
-  // BỘ ĐIỀU CHỈNH XƯNG HÔ TIẾNG VIỆT THEO NGỮ CẢNH VIDEO
-  // =========================================================================
-  const PRONOUN_PRESETS = {
-    "toi-ban": { self: "tôi", other: "bạn", pluralOther: "các bạn" },
-    "toi-cacban": { self: "tôi", other: "các bạn", pluralOther: "các bạn" },
-    "minh-ban": { self: "mình", other: "bạn", pluralOther: "các bạn" },
-    "ong-chau": { self: "ông", other: "cháu", pluralOther: "các cháu" },
-    "anh-em": { self: "anh", other: "em", pluralOther: "các em" },
-    "thay-em": { self: "thầy", other: "em", pluralOther: "các em" },
-    "tao-may": { self: "tao", other: "mày", pluralOther: "tụi mày" }
-  };
-
-  function detectPronounStyleFromContext(videoTitle = "", sampleTexts = []) {
-    const context = `${videoTitle} ${sampleTexts.slice(0, 12).join(" ")}`.toLowerCase();
-    if (/\b(?:grandpa|grandfather|grandson|granddaughter|ông\s*cháu|ông\s*nội|ông\s*ngoại)\b/iu.test(context)) {
-      return "ong-chau";
-    }
-    if (/\b(?:professor|lecture|course|tutorial|lesson|bài\s*giảng|khóa\s*học|hướng\s*dẫn\s*học)\b/iu.test(context)) {
-      return "thay-em";
-    }
-    if (/\b(?:guys|everyone|welcome\s*back|subscribers|chào\s*mừng|các\s*bạn|review|unboxing)\b/iu.test(context)) {
-      return "toi-cacban";
-    }
-    return "toi-ban";
-  }
-
-  function matchCase(original, replacement) {
-    if (!original || !replacement) return replacement;
-    const first = original[0];
-    if (first === first.toLocaleUpperCase() && first !== first.toLocaleLowerCase()) {
-      return replacement[0].toLocaleUpperCase() + replacement.slice(1);
-    }
-    return replacement;
-  }
-
-  function applyVietnamesePronouns(text, style = "auto", videoTitle = "", sampleTexts = []) {
-    if (!text) return text;
-    const resolvedStyle =
-      style === "auto" ? detectPronounStyleFromContext(videoTitle, sampleTexts) : style;
-    const pair = PRONOUN_PRESETS[resolvedStyle];
-    if (!pair || resolvedStyle === "toi-ban") return text;
-
-    let out = text;
-
-    // 1. Đổi cụm "các bạn" trước để tránh bị khớp nhầm thành "các cháu/em" 2 lần
-    out = out.replace(new RegExp(`${WB_L}các\\s+bạn${WB_R}`, "giu"), (m) =>
-      matchCase(m, pair.pluralOther)
-    );
-
-    // 2. Đổi ngôi thứ hai "bạn" (tránh đổi trong từ ghép như "bạn bè", "bạn thân", "bạn gái", "bạn trai", "kết bạn")
-    out = out.replace(
-      new RegExp(
-        `(?<!(?:kết|làm|người)\\s+)${WB_L}bạn${WB_R}(?!\\s+(?:bè|thân|gái|trai|đời|học|đồng\\s*nghiệp|hàng))`,
-        "giu"
-      ),
-      (m) => matchCase(m, pair.other)
-    );
-
-    // 3. Đổi ngôi thứ nhất "tôi" (tránh đổi trong "chúng tôi", "tôi luyện")
-    out = out.replace(
-      new RegExp(`(?<!chúng\\s+)${WB_L}tôi${WB_R}(?!\\s+luyện)`, "giu"),
-      (m) => matchCase(m, pair.self)
-    );
-
-    return out;
-  }
-
   function isSoundEffectParenthetical(content) {
     const t = (content || "").replace(/\s+/g, " ").trim();
     if (!t) return true;
@@ -230,7 +162,7 @@
   }
 
   // =========================================================================
-  // 2. TÁCH & GỘP CÂU (Tối ưu cho cả video nhanh lẫn Podcast nói chậm)
+  // 2. TÁCH & GỘP CÂU
   // =========================================================================
   const ABBREV_END_RE =
     /^(?:mr|mrs|ms|dr|prof|sr|jr|st|mt|vs|etc|e\.g|i\.e|a\.m|p\.m|no|vol|fig|gs|pgs|ts|ths|bs|ds|ks|cn|kts|tp|tt|tx|v\.v|đ\/c|\p{L}|\d+)$/iu;
@@ -512,7 +444,7 @@
   }
 
   // =========================================================================
-  // 4. HÀNG ĐỢI AUDIO (Co giãn tốc độ 2 chiều cho Podcast + Giữ nhịp thở giữa 2 câu)
+  // 4. HÀNG ĐỢI AUDIO (2 chế độ: Mặc định tự khớp nhịp video / Tùy chỉnh tốc độ cố định)
   // =========================================================================
   const PRE_ROLL_SEC = 0.12;
 
@@ -525,7 +457,8 @@
       this.isPlaying = false;
       this.isPausedByVideo = false;
       this.volume = 1.0;
-      this.baseSpeed = 1.35;
+      this.autoPacing = true; // true = Mặc định (tự co giãn khớp nhịp video), false = Tùy chỉnh tốc độ thủ công
+      this.baseSpeed = 1.25;
       this.providerSpeedMultiplier = 0.92;
       this.videoPlaybackRate = 1.0;
       this.lastVideoTime = 0;
@@ -691,14 +624,12 @@
       this._preloadNext();
 
       if (lag < -0.04) {
-        // Đọc xong sớm -> đợi đúng thời điểm câu tiếp theo trên video
         const waitMs = Math.min(3000, (Math.abs(lag) / this.videoPlaybackRate) * 1000);
         this.playNextTimer = setTimeout(() => {
           this.playNextTimer = null;
           if (!this.isPausedByVideo) this.playNext();
         }, waitMs);
       } else if (lag > 0.35) {
-        // Đang đuổi nhịp nhưng vẫn giữ khoảng thở tối thiểu 160ms để không dính 2 câu vào nhau
         const breathMs = Math.max(140, Math.round(170 / this.videoPlaybackRate));
         this.playNextTimer = setTimeout(() => {
           this.playNextTimer = null;
@@ -729,32 +660,29 @@
       this.nextAudioPreload.load();
     }
 
-    // Co giãn tốc độ 2 chiều: tự chậm rãi theo Podcast nếu câu gốc dài, tự tăng tốc nếu câu gốc ngắn
     _calcRate(item = null, audio = null) {
-      const userMaxRate = this.baseSpeed * this.providerSpeedMultiplier * this.videoPlaybackRate;
-      const minNaturalRate = 0.96 * this.videoPlaybackRate;
+      const vRate = this.videoPlaybackRate;
 
-      if (item && audio && Number.isFinite(audio.duration) && audio.duration > 0.3) {
-        const deadline = item.nextStartTime
-          ? Math.min(item.endTime + 0.35, item.nextStartTime - 0.16)
-          : item.endTime + 0.25;
-        const now = this.lastVideoTime > 0 ? Math.max(this.lastVideoTime, item.startTime) : item.startTime;
-        const availableSec = Math.max(0.7, (deadline - now) / this.videoPlaybackRate);
-        const remainingAudio = Math.max(0.2, audio.duration - (audio.currentTime || 0));
-
-        // Tốc độ vừa khít với khoảng thời gian câu thoại trên video
-        const fitRate = (remainingAudio / availableSec) * this.videoPlaybackRate;
-
-        if (fitRate <= userMaxRate) {
-          // Người nói chậm (Podcast): hạ về nhịp thong thả vừa khít câu, không phóng nhanh rồi ngồi chờ
-          return Math.max(minNaturalRate, Math.min(userMaxRate, fitRate * 1.04));
+      // Chế độ 1: Mặc định (Tự động co giãn tốc độ khớp nhịp người nói trong video)
+      if (this.autoPacing) {
+        const minNaturalRate = 0.96 * vRate;
+        const maxAutoRate = 1.65 * vRate;
+        if (item && audio && Number.isFinite(audio.duration) && audio.duration > 0.3) {
+          const deadline = item.nextStartTime
+            ? Math.min(item.endTime + 0.35, item.nextStartTime - 0.16)
+            : item.endTime + 0.25;
+          const now = this.lastVideoTime > 0 ? Math.max(this.lastVideoTime, item.startTime) : item.startTime;
+          const availableSec = Math.max(0.7, (deadline - now) / vRate);
+          const remainingAudio = Math.max(0.2, audio.duration - (audio.currentTime || 0));
+          const fitRate = (remainingAudio / availableSec) * vRate;
+          return Math.max(minNaturalRate, Math.min(maxAutoRate, fitRate * 1.04));
         }
-        // Người nói nhanh: cho phép nhích nhẹ vượt mức cài đặt (tối đa +20%) để không trễ sang câu sau
-        const ceiling = Math.min(1.85 * this.videoPlaybackRate, userMaxRate * 1.2);
-        return Math.min(ceiling, fitRate);
+        return Math.max(minNaturalRate, 1.15 * vRate * this.providerSpeedMultiplier);
       }
 
-      return Math.max(minNaturalRate, Math.min(1.85 * this.videoPlaybackRate, userMaxRate));
+      // Chế độ 2: Tùy chỉnh thủ công (Đọc đúng tốc độ người dùng kéo trên thanh trượt)
+      const manualRate = this.baseSpeed * this.providerSpeedMultiplier * vRate;
+      return Math.max(0.75, Math.min(2.2, manualRate));
     }
 
     _syncRate() {
@@ -843,6 +771,11 @@
       if (this.currentAudio) this.currentAudio.volume = this.volume;
     }
 
+    setAutoPacing(flag) {
+      this.autoPacing = Boolean(flag);
+      this._syncRate();
+    }
+
     setBaseSpeed(s) {
       this.baseSpeed = Math.max(0.8, Math.min(2.0, s));
       this._syncRate();
@@ -916,7 +849,6 @@
   window.DubCore = {
     cleanTextForTTS,
     cleanTextForViTTS: cleanTextForTTS,
-    applyVietnamesePronouns,
     mergeCaptionSegments,
     segmentWordsForKaraoke,
     DubAudioQueue
