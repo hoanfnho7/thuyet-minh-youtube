@@ -267,12 +267,22 @@
     return merged.buffer;
   }
 
-  const WAVENET_MAP = {
+const WAVENET_MAP = {
     vi: { code: "vi-VN", male: "vi-VN-Wavenet-D", female: "vi-VN-Wavenet-A" },
     en: { code: "en-US", male: "en-US-Wavenet-D", female: "en-US-Wavenet-F" },
+    es: { code: "es-ES", male: "es-ES-Wavenet-B", female: "es-ES-Wavenet-C" },
+    pt: { code: "pt-BR", male: "pt-BR-Wavenet-B", female: "pt-BR-Wavenet-A" },
+    fr: { code: "fr-FR", male: "fr-FR-Wavenet-B", female: "fr-FR-Wavenet-A" },
+    de: { code: "de-DE", male: "de-DE-Wavenet-B", female: "de-DE-Wavenet-A" },
+    ru: { code: "ru-RU", male: "ru-RU-Wavenet-B", female: "ru-RU-Wavenet-A" },
     ja: { code: "ja-JP", male: "ja-JP-Wavenet-D", female: "ja-JP-Wavenet-B" },
     ko: { code: "ko-KR", male: "ko-KR-Wavenet-C", female: "ko-KR-Wavenet-A" },
-    "zh-CN": { code: "cmn-CN", male: "cmn-CN-Wavenet-B", female: "cmn-CN-Wavenet-A" }
+    "zh-CN": { code: "cmn-CN", male: "cmn-CN-Wavenet-B", female: "cmn-CN-Wavenet-A" },
+    "zh-TW": { code: "cmn-TW", male: "cmn-TW-Wavenet-B", female: "cmn-TW-Wavenet-A" },
+    hi: { code: "hi-IN", male: "hi-IN-Wavenet-B", female: "hi-IN-Wavenet-A" },
+    id: { code: "id-ID", male: "id-ID-Wavenet-B", female: "id-ID-Wavenet-A" },
+    th: { code: "th-TH", male: "th-TH-Standard-A", female: "th-TH-Standard-A" },
+    ar: { code: "ar-XA", male: "ar-XA-Wavenet-B", female: "ar-XA-Wavenet-A" }
   };
 
   function resolveWaveNetVoice(voiceId, lang = "vi") {

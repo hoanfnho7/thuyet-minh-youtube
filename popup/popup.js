@@ -1,24 +1,38 @@
 (() => {
   "use strict";
-  const openaiInput = document.getElementById("openaiApiKey");
-  const googleInput = document.getElementById("googleApiKey");
+
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    const key = el.getAttribute("data-i18n");
+    const msg = chrome.i18n?.getMessage(key);
+    if (msg) el.textContent = msg;
+  });
+
+  const openaiInput = document.getElementById("openaiKey");
+  const googleInput = document.getElementById("googleKey");
   const saveBtn = document.getElementById("saveBtn");
-  const statusEl = document.getElementById("status");
+  const savedStatus = document.getElementById("savedStatus");
 
   chrome.storage.local.get(["byokConfig"], (res) => {
-    const cfg = res?.byokConfig || {};
-    if (cfg.openaiApiKey) openaiInput.value = cfg.openaiApiKey;
-    if (cfg.googleApiKey) googleInput.value = cfg.googleApiKey;
+    if (res?.byokConfig) {
+      openaiInput.value = res.byokConfig.openaiApiKey || "";
+      googleInput.value = res.byokConfig.googleApiKey || "";
+    }
   });
 
   saveBtn.addEventListener("click", () => {
-    const byokConfig = {
-      openaiApiKey: openaiInput.value.trim(),
-      googleApiKey: googleInput.value.trim()
-    };
-    chrome.storage.local.set({ byokConfig }, () => {
-      statusEl.textContent = "Đã lưu cài đặt!";
-      setTimeout(() => (statusEl.textContent = ""), 2000);
-    });
+    chrome.storage.local.set(
+      {
+        byokConfig: {
+          openaiApiKey: openaiInput.value.trim(),
+          googleApiKey: googleInput.value.trim()
+        }
+      },
+      () => {
+        savedStatus.textContent = chrome.i18n?.getMessage("popupSavedMsg") || "Saved!";
+        setTimeout(() => {
+          savedStatus.textContent = "";
+        }, 1800);
+      }
+    );
   });
 })();

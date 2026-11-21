@@ -8,10 +8,12 @@
     :root {
       --bg: #090d16;
       --surface: #111827;
+      --surface-2: #1e293b;
       --border: rgba(255, 255, 255, 0.1);
       --text: #f8fafc;
       --muted: #94a3b8;
       --accent: #38bdf8;
+      --primary: #2563eb;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -19,89 +21,184 @@
       color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       line-height: 1.65;
-      padding: 40px 20px;
+      padding: 36px 20px;
+      -webkit-font-smoothing: antialiased;
     }
     .container {
-      max-width: 780px;
+      max-width: 800px;
       margin: 0 auto;
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 16px;
-      padding: 36px;
+      padding: 32px 36px;
+    }
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
     }
     .back {
-      display: inline-block;
       color: var(--accent);
       text-decoration: none;
       font-size: 14px;
       font-weight: 600;
-      margin-bottom: 20px;
     }
     .back:hover { text-decoration: underline; }
+    .lang-switch {
+      display: inline-flex;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 2px;
+    }
+    .lang-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 9px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .lang-btn.active {
+      background: var(--primary);
+      color: #fff;
+    }
     h1 { font-size: 28px; margin-bottom: 6px; }
-    .updated { color: var(--muted); font-size: 13.5px; margin-bottom: 24px; }
-    h2 { font-size: 18px; margin: 24px 0 10px; color: #e2e8f0; }
+    .updated { color: var(--muted); font-size: 13.5px; margin-bottom: 22px; }
+    h2 { font-size: 18px; margin: 24px 0 10px; color: #fff; }
     p, li { color: #cbd5e1; font-size: 14.5px; }
     ul { padding-left: 20px; margin-top: 8px; }
     li { margin-bottom: 8px; }
     code {
-      background: #1e293b;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
       padding: 2px 6px;
       border-radius: 5px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
       font-size: 13px;
       color: var(--accent);
     }
-    a { color: var(--accent); }
-    hr { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    @media (max-width: 540px) {
+      .container { padding: 24px 20px; }
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <a class="back" href="./">← Back to Home</a>
-    <h1>Privacy Policy</h1>
-    <p class="updated"><strong>YouTube AI Voice Dubber</strong> · Last updated: November 2026</p>
+    <div class="top-bar">
+      <a class="back" href="./" data-i18n="backHome">← Back to Home</a>
+      <div class="lang-switch" role="group" aria-label="Language switcher">
+        <button type="button" class="lang-btn" id="btnEn" onclick="setLang('en')">EN</button>
+        <button type="button" class="lang-btn" id="btnVi" onclick="setLang('vi')">VI</button>
+      </div>
+    </div>
 
-    <p>
+    <h1 data-i18n="title">Privacy Policy</h1>
+    <p class="updated" data-i18n-html="updated"><strong>YouTube AI Voice Dubber</strong> · Last updated: November 2026</p>
+
+    <p data-i18n="intro">
       YouTube AI Voice Dubber ("the Extension") is committed to protecting user privacy.
       This Privacy Policy explains how information is handled when you install and use the Extension.
     </p>
 
-    <h2>1. No Personal Data Collection</h2>
+    <h2 data-i18n="s1Title">1. No Personal Data Collection</h2>
     <ul>
-      <li>The Extension does <strong>not</strong> collect, store, sell, or transmit any personally identifiable information (PII), browsing history, YouTube account credentials, or usage analytics to any developer-owned servers.</li>
-      <li>All user preferences (target language, voice selection, playback speed, volume balance) and optional Bring-Your-Own-Key (BYOK) API keys (OpenAI / Google Cloud) are saved exclusively on your local device via the browser's <code>chrome.storage.local</code> API.</li>
+      <li data-i18n-html="s1Li1">The Extension does <strong>not</strong> collect, store, sell, or transmit any personally identifiable information (PII), browsing history, YouTube account credentials, or usage analytics to any developer-owned servers.</li>
+      <li data-i18n-html="s1Li2">All user preferences (target language, voice selection, playback speed mode, volume balance) and optional Bring-Your-Own-Key (BYOK) API keys (OpenAI / Google Cloud) are saved exclusively on your local device via the browser's <code>chrome.storage.local</code> API.</li>
     </ul>
 
-    <h2>2. Third-Party Services</h2>
-    <p>
+    <h2 data-i18n="s2Title">2. Third-Party Services</h2>
+    <p data-i18n="s2Desc">
       To provide real-time subtitle translation and AI voice-over, caption segments from the active YouTube video are processed directly from your browser:
     </p>
     <ul>
-      <li>Subtitle text is sent transiently to translation and Text-to-Speech providers (Google Translate, Microsoft Speech Services, or your configured OpenAI / Google Cloud API endpoints) solely to generate translated captions and audio playback.</li>
-      <li>No intermediary server operated by the developer intercepts, logs, or retains these requests.</li>
+      <li data-i18n="s2Li1">Subtitle text is sent transiently to translation and Text-to-Speech providers (Google Translate, Microsoft Speech Services, or your configured OpenAI / Google Cloud API endpoints) solely to generate translated captions and audio playback.</li>
+      <li data-i18n="s2Li2">No intermediary server operated by the developer intercepts, logs, or retains these requests.</li>
     </ul>
 
-    <h2>3. Browser Permissions Justification</h2>
+    <h2 data-i18n="s3Title">3. Browser Permissions Justification</h2>
     <ul>
-      <li><code>storage</code>: Required solely to persist your extension preferences and optional API keys locally on your device.</li>
-      <li><code>host_permissions</code> (<code>youtube.com</code> and TTS/translation APIs): Required to read video caption tracks on YouTube pages and fetch synthesized speech audio.</li>
+      <li data-i18n-html="s3Li1"><code>storage</code>: Required solely to persist your extension preferences and optional API keys locally on your device.</li>
+      <li data-i18n-html="s3Li2"><code>host_permissions</code> (<code>youtube.com</code> and translation/TTS APIs): Required to read video caption tracks on YouTube pages and fetch synthesized speech audio directly from speech providers.</li>
     </ul>
 
-    <h2>4. Contact</h2>
-    <p>
+    <h2 data-i18n="s4Title">4. Contact</h2>
+    <p data-i18n-html="s4Desc">
       If you have any questions regarding this Privacy Policy, please contact:
       <a href="mailto:lhoangnhon09@gmail.com">lhoangnhon09@gmail.com</a> or open an issue on
       <a href="https://github.com/hoanfnho7/thuyet-minh-youtube" target="_blank" rel="noopener">GitHub</a>.
     </p>
-
-    <hr />
-
-    <h2>Tóm tắt Chính sách Bảo mật (Tiếng Việt)</h2>
-    <p>
-      Tiện ích <strong>YouTube AI Voice Dubber</strong> hoạt động hoàn toàn trên trình duyệt của người dùng.
-      Chúng tôi không thu thập lịch sử duyệt web, thông tin tài khoản hay bất kỳ dữ liệu cá nhân nào.
-      Cài đặt cá nhân và API Key tùy chọn được lưu cục bộ trên thiết bị của bạn thông qua <code>chrome.storage.local</code>.
-    </p>
   </div>
+
+  <script>
+    const I18N = {
+      en: {
+        backHome: "← Back to Home",
+        title: "Privacy Policy",
+        updated: "<strong>YouTube AI Voice Dubber</strong> · Last updated: November 2026",
+        intro: 'YouTube AI Voice Dubber ("the Extension") is committed to protecting user privacy. This Privacy Policy explains how information is handled when you install and use the Extension.',
+        s1Title: "1. No Personal Data Collection",
+        s1Li1: "The Extension does <strong>not</strong> collect, store, sell, or transmit any personally identifiable information (PII), browsing history, YouTube account credentials, or usage analytics to any developer-owned servers.",
+        s1Li2: "All user preferences (target language, voice selection, playback speed mode, volume balance) and optional Bring-Your-Own-Key (BYOK) API keys (OpenAI / Google Cloud) are saved exclusively on your local device via the browser's <code>chrome.storage.local</code> API.",
+        s2Title: "2. Third-Party Services",
+        s2Desc: "To provide real-time subtitle translation and AI voice-over, caption segments from the active YouTube video are processed directly from your browser:",
+        s2Li1: "Subtitle text is sent transiently to translation and Text-to-Speech providers (Google Translate, Microsoft Speech Services, or your configured OpenAI / Google Cloud API endpoints) solely to generate translated captions and audio playback.",
+        s2Li2: "No intermediary server operated by the developer intercepts, logs, or retains these requests.",
+        s3Title: "3. Browser Permissions Justification",
+        s3Li1: "<code>storage</code>: Required solely to persist your extension preferences and optional API keys locally on your device.",
+        s3Li2: "<code>host_permissions</code> (<code>youtube.com</code> and translation/TTS APIs): Required to read video caption tracks on YouTube pages and fetch synthesized speech audio directly from speech providers.",
+        s4Title: "4. Contact",
+        s4Desc: 'If you have any questions regarding this Privacy Policy, please contact: <a href="mailto:lhoangnhon09@gmail.com">lhoangnhon09@gmail.com</a> or open an issue on <a href="https://github.com/hoanfnho7/thuyet-minh-youtube" target="_blank" rel="noopener">GitHub</a>.'
+      },
+      vi: {
+        backHome: "← Quay lại trang chủ",
+        title: "Chính sách Bảo mật",
+        updated: "<strong>YouTube AI Voice Dubber</strong> · Cập nhật lần cuối: Tháng 11, 2026",
+        intro: 'Tiện ích mở rộng YouTube AI Voice Dubber ("Tiện ích") cam kết bảo vệ quyền riêng tư của người dùng. Chính sách này giải thích cách dữ liệu được xử lý khi bạn cài đặt và sử dụng Tiện ích.',
+        s1Title: "1. Không thu thập dữ liệu cá nhân",
+        s1Li1: "Tiện ích <strong>không</strong> thu thập, lưu trữ, bán hay truyền tải bất kỳ thông tin định danh cá nhân (PII), lịch sử duyệt web, thông tin tài khoản YouTube hay dữ liệu phân tích hành vi nào về máy chủ của nhà phát triển.",
+        s1Li2: "Toàn bộ cài đặt của bạn (ngôn ngữ đích, giọng đọc, chế độ tốc độ, mức âm lượng gốc) và API Key tùy chọn (OpenAI / Google Cloud) chỉ được lưu cục bộ trên thiết bị của bạn thông qua <code>chrome.storage.local</code>.",
+        s2Title: "2. Dịch vụ bên thứ ba",
+        s2Desc: "Để dịch phụ đề và tạo giọng đọc AI theo thời gian thực, nội dung phụ đề của video YouTube đang mở được xử lý trực tiếp từ trình duyệt của bạn:",
+        s2Li1: "Các đoạn phụ đề được gửi trực tiếp tới dịch vụ dịch thuật và chuyển văn bản thành giọng nói (Google Translate, Microsoft Speech Services, hoặc API OpenAI / Google Cloud do bạn tự cấu hình) chỉ nhằm mục đích tạo bản dịch và âm thanh thuyết minh.",
+        s2Li2: "Không có bất kỳ máy chủ trung gian nào của nhà phát triển chặn, ghi nhật ký (log) hay lưu giữ các yêu cầu này.",
+        s3Title: "3. Giải trình quyền truy cập của trình duyệt",
+        s3Li1: "<code>storage</code>: Chỉ dùng để lưu trữ cài đặt cá nhân và API Key tùy chọn ngay trên thiết bị của bạn.",
+        s3Li2: "<code>host_permissions</code> (<code>youtube.com</code> và các API dịch/TTS): Cần thiết để đọc dữ liệu phụ đề trên trang YouTube và tải âm thanh giọng đọc trực tiếp từ nhà cung cấp.",
+        s4Title: "4. Liên hệ",
+        s4Desc: 'Nếu có bất kỳ câu hỏi nào về Chính sách Bảo mật này, vui lòng liên hệ qua email: <a href="mailto:lhoangnhon09@gmail.com">lhoangnhon09@gmail.com</a> hoặc tạo issue tại <a href="https://github.com/hoanfnho7/thuyet-minh-youtube" target="_blank" rel="noopener">GitHub</a>.'
+      }
+    };
+
+    function setLang(lang) {
+      const dict = I18N[lang] || I18N.en;
+      document.documentElement.lang = lang;
+      localStorage.setItem("yt_dub_landing_lang", lang);
+      document.getElementById("btnEn").classList.toggle("active", lang === "en");
+      document.getElementById("btnVi").classList.toggle("active", lang === "vi");
+
+      document.querySelectorAll("[data-i18n]").forEach((el) => {
+        const key = el.getAttribute("data-i18n");
+        if (dict[key]) el.textContent = dict[key];
+      });
+      document.querySelectorAll("[data-i18n-html]").forEach((el) => {
+        const key = el.getAttribute("data-i18n-html");
+        if (dict[key]) el.innerHTML = dict[key];
+      });
+    }
+
+    const saved = localStorage.getItem("yt_dub_landing_lang");
+    const defaultLang = saved || ((navigator.language || "").toLowerCase().startsWith("vi") ? "vi" : "en");
+    setLang(defaultLang);
+  </script>
 </body>
 </html>

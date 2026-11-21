@@ -3,33 +3,205 @@
   if (window.__YT_DUB_CONTENT_LOADED__) return;
   window.__YT_DUB_CONTENT_LOADED__ = true;
 
-  const VOICES = {
-    vi: [
-      { id: "vi-VN-NamMinhNeural", label: "Edge - Nam Minh (Nam)" },
-      { id: "vi-VN-HoaiMyNeural", label: "Edge - Hoài My (Nữ)" },
-      { id: "google-free", label: "Google - Chuẩn (Nữ)" }
-    ],
-    en: [
-      { id: "en-US-AndrewNeural", label: "Edge - Andrew (Male)" },
-      { id: "en-US-AvaNeural", label: "Edge - Ava (Female)" },
-      { id: "google-free", label: "Google - Standard" }
-    ],
-    ja: [
-      { id: "ja-JP-KeitaNeural", label: "Edge - Keita (Male)" },
-      { id: "ja-JP-NanamiNeural", label: "Edge - Nanami (Female)" },
-      { id: "google-free", label: "Google - Standard" }
-    ],
-    ko: [
-      { id: "ko-KR-InJoonNeural", label: "Edge - InJoon (Male)" },
-      { id: "ko-KR-SunHiNeural", label: "Edge - SunHi (Female)" },
-      { id: "google-free", label: "Google - Standard" }
-    ],
-    "zh-CN": [
-      { id: "zh-CN-YunxiNeural", label: "Edge - Yunxi (Male)" },
-      { id: "zh-CN-XiaoxiaoNeural", label: "Edge - Xiaoxiao (Female)" },
-      { id: "google-free", label: "Google - Standard" }
-    ]
+  const FALLBACK_EN = {
+    closePanel: "Close panel",
+    sourceSubLabel: "Source sub",
+    sourceAutoDefault: "Auto (Video original)",
+    autoTag: "Auto",
+    targetLangLabel: "Dub to",
+    voiceLabel: "Voice",
+    speedLabel: "Speech rate",
+    speedDefaultBtn: "Default",
+    speedDefaultTooltip: "Automatically match video speaking pace",
+    speedAutoVal: "Auto",
+    origVolLabel: "Original volume",
+    btnStart: "Start Dubbing (Alt+Shift+D)",
+    btnStop: "Stop Dubbing (Alt+Shift+D)",
+    btnScript: "Bilingual Script (Alt+Shift+V)",
+    statusReady: "Ready",
+    statusStopped: "Stopped",
+    statusReloadRequired: "Extension updated — Please reload the page",
+    statusReading: "Dubbing {current}/{total}",
+    statusAdPaused: "Paused (Ad playing)",
+    statusPreparing: "Preparing line {index}...",
+    statusTranslatingInit: "Translating opening lines...",
+    statusSynthesizingInit: "Generating AI voice...",
+    statusFetchingSub: "Fetching subtitles...",
+    statusNoVideo: "Video player not found",
+    statusEmptySub: "Subtitles are empty",
+    statusReadyCount: "Ready ({total} lines)",
+    scriptHeaderDefault: "Bilingual Script",
+    scriptHeaderLangs: "Bilingual ({src} → {dst})",
+    errNoVideoId: "Video ID not found",
+    errNoSubtitles: "No subtitles available for this video",
+    errFetchSubtitles: "Failed to load subtitles",
+    errTimeoutSubtitles: "Subtitle request timed out",
+    voiceGoogleStd: "Google - Standard"
   };
+
+  function t(key, vars = {}) {
+    let msg = "";
+    try {
+      msg = chrome.i18n?.getMessage(key) || "";
+    } catch {}
+    if (!msg) msg = FALLBACK_EN[key] || key;
+    for (const [k, v] of Object.entries(vars)) {
+      msg = msg.replaceAll(`{${k}}`, String(v));
+    }
+    return msg;
+  }
+
+  function mapSubError(rawMsg) {
+    if (rawMsg === "ERR_NO_VIDEO_ID") return t("errNoVideoId");
+    if (rawMsg === "ERR_NO_SUBTITLES") return t("errNoSubtitles");
+    if (rawMsg === "ERR_FETCH_SUBTITLES") return t("errFetchSubtitles");
+    if (rawMsg === "ERR_TIMEOUT_SUBTITLES") return t("errTimeoutSubtitles");
+    return rawMsg || t("errFetchSubtitles");
+  }
+
+const LANGUAGE_CONFIG = [
+    {
+      code: "en",
+      label: "English",
+      voices: [
+        { id: "en-US-AndrewNeural", label: "Edge - Andrew (Male)" },
+        { id: "en-US-AvaNeural", label: "Edge - Ava (Female)" }
+      ]
+    },
+    {
+      code: "vi",
+      label: "Tiếng Việt",
+      voices: [
+        { id: "vi-VN-NamMinhNeural", label: "Edge - Nam Minh (Male)" },
+        { id: "vi-VN-HoaiMyNeural", label: "Edge - Hoài My (Female)" }
+      ]
+    },
+    {
+      code: "es",
+      label: "Español (Spanish)",
+      voices: [
+        { id: "es-ES-AlvaroNeural", label: "Edge - Alvaro (Male)" },
+        { id: "es-MX-DaliaNeural", label: "Edge - Dalia (Female)" }
+      ]
+    },
+    {
+      code: "pt",
+      label: "Português (Portuguese)",
+      voices: [
+        { id: "pt-BR-AntonioNeural", label: "Edge - Antonio (Male)" },
+        { id: "pt-BR-FranciscaNeural", label: "Edge - Francisca (Female)" }
+      ]
+    },
+    {
+      code: "fr",
+      label: "Français (French)",
+      voices: [
+        { id: "fr-FR-HenriNeural", label: "Edge - Henri (Male)" },
+        { id: "fr-FR-DeniseNeural", label: "Edge - Denise (Female)" }
+      ]
+    },
+    {
+      code: "de",
+      label: "Deutsch (German)",
+      voices: [
+        { id: "de-DE-ConradNeural", label: "Edge - Conrad (Male)" },
+        { id: "de-DE-KatjaNeural", label: "Edge - Katja (Female)" }
+      ]
+    },
+    {
+      code: "ru",
+      label: "Русский (Russian)",
+      voices: [
+        { id: "ru-RU-DmitryNeural", label: "Edge - Dmitry (Male)" },
+        { id: "ru-RU-SvetlanaNeural", label: "Edge - Svetlana (Female)" }
+      ]
+    },
+    {
+      code: "ja",
+      label: "日本語 (Japanese)",
+      voices: [
+        { id: "ja-JP-KeitaNeural", label: "Edge - Keita (Male)" },
+        { id: "ja-JP-NanamiNeural", label: "Edge - Nanami (Female)" }
+      ]
+    },
+    {
+      code: "ko",
+      label: "한국어 (Korean)",
+      voices: [
+        { id: "ko-KR-InJoonNeural", label: "Edge - InJoon (Male)" },
+        { id: "ko-KR-SunHiNeural", label: "Edge - SunHi (Female)" }
+      ]
+    },
+    {
+      code: "zh-CN",
+      label: "简体中文 (Chinese Simp.)",
+      voices: [
+        { id: "zh-CN-YunxiNeural", label: "Edge - Yunxi (Male)" },
+        { id: "zh-CN-XiaoxiaoNeural", label: "Edge - Xiaoxiao (Female)" }
+      ]
+    },
+    {
+      code: "zh-TW",
+      label: "繁體中文 (Chinese Trad.)",
+      voices: [
+        { id: "zh-TW-YunJheNeural", label: "Edge - YunJhe (Male)" },
+        { id: "zh-TW-HsiaoChenNeural", label: "Edge - HsiaoChen (Female)" }
+      ]
+    },
+    {
+      code: "hi",
+      label: "हिन्दी (Hindi)",
+      voices: [
+        { id: "hi-IN-MadhurNeural", label: "Edge - Madhur (Male)" },
+        { id: "hi-IN-SwaraNeural", label: "Edge - Swara (Female)" }
+      ]
+    },
+    {
+      code: "id",
+      label: "Bahasa Indonesia",
+      voices: [
+        { id: "id-ID-ArdiNeural", label: "Edge - Ardi (Male)" },
+        { id: "id-ID-GadisNeural", label: "Edge - Gadis (Female)" }
+      ]
+    },
+    {
+      code: "th",
+      label: "ไทย (Thai)",
+      voices: [
+        { id: "th-TH-NiwatNeural", label: "Edge - Niwat (Male)" },
+        { id: "th-TH-PremwadeeNeural", label: "Edge - Premwadee (Female)" }
+      ]
+    },
+    {
+      code: "ar",
+      label: "العربية (Arabic)",
+      voices: [
+        { id: "ar-SA-HamedNeural", label: "Edge - Hamed (Male)" },
+        { id: "ar-SA-ZariyahNeural", label: "Edge - Zariyah (Female)" }
+      ]
+    }
+  ];
+
+  const VOICES = Object.fromEntries(
+    LANGUAGE_CONFIG.map((item) => [
+      item.code,
+      [...item.voices, { id: "google-free", label: t("voiceGoogleStd") }]
+    ])
+  );
+
+  function getDefaultTargetLang() {
+    try {
+      const ui = (chrome.i18n?.getUILanguage?.() || navigator.language || "en").toLowerCase();
+      if (ui.startsWith("zh-tw") || ui.startsWith("zh-hk") || ui.startsWith("zh-hant")) return "zh-TW";
+      if (ui.startsWith("zh")) return "zh-CN";
+      const base = ui.split(/[-_]/)[0];
+      if (LANGUAGE_CONFIG.some((l) => l.code === base)) return base;
+    } catch {}
+    return "en";
+  }
+
+  const DEFAULT_LANG = getDefaultTargetLang();
+  const DEFAULT_VOICE = (VOICES[DEFAULT_LANG] || VOICES.en)[0].id;
 
   const PRE_ENQUEUE_AHEAD_SEC = 5.0;
   const STALE_LOADING_MS = 14000;
@@ -40,13 +212,13 @@
     panelOpen: false,
     scriptOpen: false,
     contextDead: false,
-    lang: "vi",
+    lang: DEFAULT_LANG,
     sourceLang: "en",
     selectedSourceVssId: "",
     availableTracks: [],
-    voice: "vi-VN-NamMinhNeural",
-    autoSpeed: true, // Mặc định: tự co giãn tốc độ khớp nhịp video
-    speed: 1.25,     // Tốc độ dùng khi người dùng tự kéo thanh trượt
+    voice: DEFAULT_VOICE,
+    autoSpeed: true,
+    speed: 1.25,
     origVolume: 0.25,
     hasOpenAiKey: false,
     hasGoogleKey: false,
@@ -147,7 +319,7 @@
     syncOriginalVideoVolume();
     highlightScriptItem(item.index);
     startKaraokeLoop(item.index, audio);
-    setStatus(`Đang đọc ${item.index + 1}/${state.segments.length}`, "#34d399");
+    setStatus(t("statusReading", { current: item.index + 1, total: state.segments.length }), "#34d399");
   };
 
   audioQueue.onChunkEnd = (item) => {
@@ -186,7 +358,7 @@
       injectTimer = null;
     }
     syncUI();
-    setStatus("Extension vừa cập nhật — Hãy F5 lại trang", "#fbbf24");
+    setStatus(t("statusReloadRequired"), "#fbbf24");
   }
 
   function safeSendMessage(payload, timeoutMs = 12000) {
@@ -267,9 +439,11 @@
       chrome.storage?.local?.get(["ytDubSettings", "byokConfig"], (res) => {
         if (!checkContextAlive()) return;
         if (res?.ytDubSettings) {
+          const savedLang = res.ytDubSettings.lang || DEFAULT_LANG;
+          const fallbackVoice = (VOICES[savedLang] || VOICES.en)[0].id;
           Object.assign(state, {
-            lang: res.ytDubSettings.lang || "vi",
-            voice: res.ytDubSettings.voice || "vi-VN-NamMinhNeural",
+            lang: savedLang,
+            voice: res.ytDubSettings.voice || fallbackVoice,
             autoSpeed: res.ytDubSettings.autoSpeed !== undefined ? Boolean(res.ytDubSettings.autoSpeed) : true,
             speed: res.ytDubSettings.speed || 1.25,
             origVolume: res.ytDubSettings.origVolume ?? 0.25
@@ -351,10 +525,10 @@
   function populateSourceTracks() {
     const sel = document.getElementById("ytDubSourceLang");
     if (!sel) return;
-    const opts = [el("option", { value: "", textContent: "Tự động (Gốc video)" })];
-    for (const t of state.availableTracks) {
-      const label = t.isAuto ? `${t.label} (Tự động)` : t.label;
-      opts.push(el("option", { value: t.vssId, textContent: label }));
+    const opts = [el("option", { value: "", textContent: t("sourceAutoDefault") })];
+    for (const track of state.availableTracks) {
+      const label = track.isAuto ? `${track.label} (${t("autoTag")})` : track.label;
+      opts.push(el("option", { value: track.vssId, textContent: label }));
     }
     sel.replaceChildren(...opts);
     sel.value = state.selectedSourceVssId || "";
@@ -368,38 +542,32 @@
     const closeBtn = el("button", {
       className: "yt-dub-close",
       id: "ytDubCloseBtn",
-      title: "Đóng bảng",
+      title: t("closePanel"),
       textContent: "×"
     });
     const header = el("div", { className: "yt-dub-header", id: "ytDubDragHeader" }, [title, closeBtn]);
 
     const sourceSelect = el("select", { id: "ytDubSourceLang", className: "yt-dub-select" }, [
-      el("option", { value: "", textContent: "Tự động (Gốc video)" })
+      el("option", { value: "", textContent: t("sourceAutoDefault") })
     ]);
     const sourceRow = el("div", { className: "yt-dub-row" }, [
-      el("label", { for: "ytDubSourceLang", textContent: "Sub gốc" }),
+      el("label", { for: "ytDubSourceLang", textContent: t("sourceSubLabel") }),
       sourceSelect
     ]);
 
-    const langSelect = el(
+const langSelect = el(
       "select",
       { id: "ytDubLang", className: "yt-dub-select" },
-      [
-        ["vi", "Tiếng Việt"],
-        ["en", "English"],
-        ["ja", "日本語"],
-        ["ko", "한국어"],
-        ["zh-CN", "中文"]
-      ].map(([val, label]) => el("option", { value: val, textContent: label }))
+      LANGUAGE_CONFIG.map((item) => el("option", { value: item.code, textContent: item.label }))
     );
     const langRow = el("div", { className: "yt-dub-row" }, [
-      el("label", { for: "ytDubLang", textContent: "Dịch sang" }),
+      el("label", { for: "ytDubLang", textContent: t("targetLangLabel") }),
       langSelect
     ]);
 
     const voiceSelect = el("select", { id: "ytDubVoice", className: "yt-dub-select" });
     const voiceRow = el("div", { className: "yt-dub-row" }, [
-      el("label", { for: "ytDubVoice", textContent: "Giọng đọc" }),
+      el("label", { for: "ytDubVoice", textContent: t("voiceLabel") }),
       voiceSelect
     ]);
 
@@ -407,10 +575,10 @@
       id: "ytDubSpeedResetBtn",
       className: "yt-dub-mini-btn active",
       type: "button",
-      title: "Tự động điều chỉnh tốc độ khớp theo nhịp video",
-      textContent: "Mặc định"
+      title: t("speedDefaultTooltip"),
+      textContent: t("speedDefaultBtn")
     });
-    const speedVal = el("span", { id: "ytDubSpeedVal", textContent: "Tự động" });
+    const speedVal = el("span", { id: "ytDubSpeedVal", textContent: t("speedAutoVal") });
     const speedRight = el("div", { style: "display:flex;align-items:center;gap:6px;" }, [
       speedVal,
       speedResetBtn
@@ -425,7 +593,7 @@
       value: "1.25"
     });
     const speedGroup = el("div", { className: "yt-dub-slider-group" }, [
-      el("div", { className: "yt-dub-slider-label" }, [el("span", { textContent: "Tốc độ đọc" }), speedRight]),
+      el("div", { className: "yt-dub-slider-label" }, [el("span", { textContent: t("speedLabel") }), speedRight]),
       speedSlider
     ]);
 
@@ -440,26 +608,26 @@
       value: "25"
     });
     const volGroup = el("div", { className: "yt-dub-slider-group" }, [
-      el("div", { className: "yt-dub-slider-label" }, [el("span", { textContent: "Âm lượng gốc" }), volVal]),
+      el("div", { className: "yt-dub-slider-label" }, [el("span", { textContent: t("origVolLabel") }), volVal]),
       volSlider
     ]);
 
     const mainBtn = el("button", {
       id: "ytDubMainBtn",
       className: "yt-dub-main-btn",
-      textContent: "Bật thuyết minh (Alt+Shift+D)"
+      textContent: t("btnStart")
     });
 
     const scriptBtn = el("button", {
       id: "ytDubScriptBtn",
       className: "yt-dub-sub-btn",
-      textContent: "Kịch bản song ngữ (Alt+Shift+V)"
+      textContent: t("btnScript")
     });
 
     const statusDiv = el("div", {
       id: "ytDubStatus",
       className: "yt-dub-status",
-      textContent: "Sẵn sàng"
+      textContent: t("statusReady")
     });
 
     const panel = el("div", { id: "yt-dub-panel", className: "hidden" }, [
@@ -506,11 +674,11 @@
         clearAudioCache();
         state.enqueuedSet.clear();
         if (state.video) {
-          const t = state.video.currentTime;
+          const curT = state.video.currentTime;
           for (let i = 0; i < state.segments.length; i++) {
-            if (state.segments[i].end < t - 0.3) state.enqueuedSet.add(i);
+            if (state.segments[i].end < curT - 0.3) state.enqueuedSet.add(i);
           }
-          pipelineAhead(t, state.sessionToken);
+          pipelineAhead(curT, state.sessionToken);
           syncPlayback();
         }
       }
@@ -546,15 +714,15 @@
   function populateVoices(resetToDefault = false) {
     const sel = document.getElementById("ytDubVoice");
     if (!sel) return;
-    const list = [...(VOICES[state.lang] || VOICES.vi)];
+    const list = [...(VOICES[state.lang] || VOICES.en)];
 
     if (state.hasGoogleKey) {
       if (state.lang === "vi") {
         list.push(
-          { id: "google-wavenet-b", label: "Google WaveNet - Nam 1" },
-          { id: "google-wavenet-d", label: "Google WaveNet - Nam 2" },
-          { id: "google-wavenet-a", label: "Google WaveNet - Nữ 1" },
-          { id: "google-wavenet-c", label: "Google WaveNet - Nữ 2" }
+          { id: "google-wavenet-b", label: "Google WaveNet - Male 1" },
+          { id: "google-wavenet-d", label: "Google WaveNet - Male 2" },
+          { id: "google-wavenet-a", label: "Google WaveNet - Female 1" },
+          { id: "google-wavenet-c", label: "Google WaveNet - Female 2" }
         );
       } else {
         list.push(
@@ -620,7 +788,7 @@
     if (document.getElementById("yt-dub-script-panel") || !document.body) return;
     const closeBtn = el("button", { className: "yt-dub-close", textContent: "×" });
     const header = el("div", { className: "yt-dub-script-header" }, [
-      el("span", { id: "ytDubScriptTitle", textContent: "Kịch bản song ngữ" }),
+      el("span", { id: "ytDubScriptTitle", textContent: t("scriptHeaderDefault") }),
       closeBtn
     ]);
     const body = el("div", { id: "ytDubScriptBody", className: "yt-dub-script-body" });
@@ -671,7 +839,10 @@
 
     const titleEl = document.getElementById("ytDubScriptTitle");
     if (titleEl) {
-      titleEl.textContent = `Song ngữ (${state.sourceLang.toUpperCase()} → ${state.lang.toUpperCase()})`;
+      titleEl.textContent = t("scriptHeaderLangs", {
+        src: state.sourceLang.toUpperCase(),
+        dst: state.lang.toUpperCase()
+      });
     }
 
     const frag = document.createDocumentFragment();
@@ -794,7 +965,7 @@
 
     const btn = document.getElementById("ytDubMainBtn");
     if (btn) {
-      btn.textContent = state.enabled ? "Tắt thuyết minh (Alt+Shift+D)" : "Bật thuyết minh (Alt+Shift+D)";
+      btn.textContent = state.enabled ? t("btnStop") : t("btnStart");
       btn.classList.toggle("active", state.enabled);
     }
 
@@ -804,7 +975,7 @@
     const sIn = document.getElementById("ytDubSpeed");
     if (sIn) sIn.value = String(state.speed);
     const sVal = document.getElementById("ytDubSpeedVal");
-    if (sVal) sVal.textContent = state.autoSpeed ? "Tự động" : `${state.speed.toFixed(2)}x`;
+    if (sVal) sVal.textContent = state.autoSpeed ? t("speedAutoVal") : `${state.speed.toFixed(2)}x`;
     const sReset = document.getElementById("ytDubSpeedResetBtn");
     if (sReset) sReset.classList.toggle("active", state.autoSpeed);
 
@@ -894,7 +1065,7 @@
       const requestId = "sub_" + Math.random().toString(36).slice(2);
       const timer = setTimeout(() => {
         window.removeEventListener("message", onMsg);
-        reject(new Error("Timeout lấy phụ đề"));
+        reject(new Error("ERR_TIMEOUT_SUBTITLES"));
       }, 9000);
 
       const onMsg = (e) => {
@@ -902,7 +1073,7 @@
         clearTimeout(timer);
         window.removeEventListener("message", onMsg);
         if (e.data.success) resolve(e.data);
-        else reject(new Error(e.data.error || "Không có phụ đề"));
+        else reject(new Error(e.data.error || "ERR_NO_SUBTITLES"));
       };
 
       window.addEventListener("message", onMsg);
@@ -1126,7 +1297,7 @@
       stopAudioAll();
       state.enqueuedSet.clear();
       syncOriginalVideoVolume();
-      setStatus("Đang tạm dừng (Quảng cáo)", "#fbbf24");
+      setStatus(t("statusAdPaused"), "#fbbf24");
       return;
     }
 
@@ -1137,10 +1308,10 @@
       return;
     }
 
-    const t = state.video.currentTime;
-    audioQueue.updateVideoTime(t);
+    const curT = state.video.currentTime;
+    audioQueue.updateVideoTime(curT);
     audioQueue.setVideoPlaybackRate(state.video.playbackRate || 1);
-    pipelineAhead(t, state.sessionToken);
+    pipelineAhead(curT, state.sessionToken);
 
     if (state.video.paused) {
       audioQueue.pause();
@@ -1153,10 +1324,10 @@
       if (state.enqueuedSet.has(i)) continue;
       const seg = state.segments[i];
 
-      if (seg.start > t + PRE_ENQUEUE_AHEAD_SEC) break;
+      if (seg.start > curT + PRE_ENQUEUE_AHEAD_SEC) break;
       if (audioQueue.getQueueLength() >= 3) break;
 
-      if (t > seg.end + 1.2 || t > seg.start + 2.6) {
+      if (curT > seg.end + 1.2 || curT > seg.start + 2.6) {
         state.enqueuedSet.add(i);
         continue;
       }
@@ -1179,8 +1350,8 @@
       } else if (cached?.status === "error" && cached.retried) {
         state.enqueuedSet.add(i);
       } else {
-        if (!audioQueue.isCurrentlyPlaying() && t >= seg.start - 0.3) {
-          setStatus(`Đang chuẩn bị câu ${i + 1}...`, "#fbbf24");
+        if (!audioQueue.isCurrentlyPlaying() && curT >= seg.start - 0.3) {
+          setStatus(t("statusPreparing", { index: i + 1 }), "#fbbf24");
         }
         break;
       }
@@ -1222,11 +1393,11 @@
 
   function onSeeked() {
     if (!state.enabled || !state.video || !checkContextAlive()) return;
-    const t = state.video.currentTime;
+    const curT = state.video.currentTime;
     for (let i = 0; i < state.segments.length; i++) {
-      if (state.segments[i].end < t - 0.3) state.enqueuedSet.add(i);
+      if (state.segments[i].end < curT - 0.3) state.enqueuedSet.add(i);
     }
-    pipelineAhead(t, state.sessionToken);
+    pipelineAhead(curT, state.sessionToken);
     if (!state.video.paused) {
       startSyncLoop();
       syncPlayback();
@@ -1272,7 +1443,7 @@
     const initialCount = Math.min(4, state.segments.length - startIdx);
     const targetIndices = Array.from({ length: initialCount }, (_, k) => startIdx + k);
 
-    setStatus("Đang dịch các câu đầu...", "#fbbf24");
+    setStatus(t("statusTranslatingInit"), "#fbbf24");
     if (!state.alreadyTranslated) {
       const texts = targetIndices.map((i) => state.segments[i].text);
       try {
@@ -1298,7 +1469,7 @@
     }
 
     if (token !== state.sessionToken) return;
-    setStatus("Đang tạo giọng đọc...", "#fbbf24");
+    setStatus(t("statusSynthesizingInit"), "#fbbf24");
 
     await Promise.race([
       Promise.all(targetIndices.slice(0, 2).map((i) => prepareAudioForIndex(i, token))),
@@ -1319,7 +1490,7 @@
 
     const video = findVideo();
     if (!video) {
-      setStatus("Không tìm thấy video", "#f87171");
+      setStatus(t("statusNoVideo"), "#f87171");
       return;
     }
     bindVideoEvents(video);
@@ -1328,7 +1499,7 @@
     startKeepalive();
 
     const wasPlaying = !video.paused;
-    setStatus("Đang lấy phụ đề...", "#fbbf24");
+    setStatus(t("statusFetchingSub"), "#fbbf24");
 
     try {
       const res = await requestSubtitlesFromPage();
@@ -1344,11 +1515,10 @@
       state.alreadyTranslated = Boolean(res.translatedByYouTube);
       state.segments = mergeShortSegments(res.segments);
 
-      // Nếu video có sẵn bản dịch tiếng Việt từ YouTube, ánh xạ trực tiếp theo mốc thời gian
       if (Array.isArray(res.nativeTargetSegments) && res.nativeTargetSegments.length > 0) {
         state.segments.forEach((seg, idx) => {
           const hits = res.nativeTargetSegments.filter(
-            (t) => t.start < seg.end - 0.12 && t.end > seg.start + 0.12
+            (sub) => sub.start < seg.end - 0.12 && sub.end > seg.start + 0.12
           );
           if (hits.length > 0) {
             const joined = hits.map((h) => h.text).join(" ").replace(/\s+/g, " ").trim();
@@ -1358,7 +1528,7 @@
       }
 
       if (!state.segments.length) {
-        setStatus("Phụ đề trống", "#f87171");
+        setStatus(t("statusEmptySub"), "#f87171");
         return;
       }
 
@@ -1368,7 +1538,7 @@
       await prebufferInitialSegments(video.currentTime, token);
       if (token !== state.sessionToken || state.contextDead) return;
 
-      setStatus(`Sẵn sàng (${state.segments.length} câu)`, "#34d399");
+      setStatus(t("statusReadyCount", { total: state.segments.length }), "#34d399");
       syncOriginalVideoVolume();
       if (wasPlaying) {
         await video.play().catch(() => {});
@@ -1380,7 +1550,7 @@
     } catch (err) {
       if (token !== state.sessionToken || state.contextDead) return;
       if (wasPlaying && video.paused) video.play().catch(() => {});
-      setStatus(err.message, "#f87171");
+      setStatus(mapSubError(err.message), "#f87171");
     }
   }
 
@@ -1396,7 +1566,7 @@
       stopKeepalive();
       stopAudioAll();
       syncOriginalVideoVolume();
-      setStatus("Đã tắt");
+      setStatus(t("statusStopped"));
     }
   }
 

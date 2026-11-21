@@ -1,8 +1,134 @@
 {
   "extName": {
-    "message": "Thuyết Minh YouTube"
+    "message": "YouTube AI Voice Dubber - Thuyết minh YouTube"
   },
   "extDescription": {
-    "message": "Tự động dịch và thuyết minh giọng đọc AI theo thời gian thực kèm kịch bản song ngữ Karaoke cho YouTube."
+    "message": "Tự động dịch phụ đề và thuyết minh (lồng tiếng) video YouTube theo thời gian thực với giọng đọc AI tự nhiên và kịch bản song ngữ Karaoke."
+  },
+  "closePanel": {
+    "message": "Đóng bảng"
+  },
+  "sourceSubLabel": {
+    "message": "Sub gốc"
+  },
+  "sourceAutoDefault": {
+    "message": "Tự động (Gốc video)"
+  },
+  "autoTag": {
+    "message": "Tự động"
+  },
+  "targetLangLabel": {
+    "message": "Dịch sang"
+  },
+  "voiceLabel": {
+    "message": "Giọng đọc"
+  },
+  "speedLabel": {
+    "message": "Tốc độ đọc"
+  },
+  "speedDefaultBtn": {
+    "message": "Mặc định"
+  },
+  "speedDefaultTooltip": {
+    "message": "Tự động điều chỉnh tốc độ khớp theo nhịp video"
+  },
+  "speedAutoVal": {
+    "message": "Tự động"
+  },
+  "origVolLabel": {
+    "message": "Âm lượng gốc"
+  },
+  "btnStart": {
+    "message": "Bật thuyết minh (Alt+Shift+D)"
+  },
+  "btnStop": {
+    "message": "Tắt thuyết minh (Alt+Shift+D)"
+  },
+  "btnScript": {
+    "message": "Kịch bản song ngữ (Alt+Shift+V)"
+  },
+  "statusReady": {
+    "message": "Sẵn sàng"
+  },
+  "statusStopped": {
+    "message": "Đã tắt"
+  },
+  "statusReloadRequired": {
+    "message": "Extension vừa cập nhật — Hãy F5 lại trang"
+  },
+  "statusReading": {
+    "message": "Đang đọc {current}/{total}"
+  },
+  "statusAdPaused": {
+    "message": "Đang tạm dừng (Quảng cáo)"
+  },
+  "statusPreparing": {
+    "message": "Đang chuẩn bị câu {index}..."
+  },
+  "statusTranslatingInit": {
+    "message": "Đang dịch các câu đầu..."
+  },
+  "statusSynthesizingInit": {
+    "message": "Đang tạo giọng đọc..."
+  },
+  "statusFetchingSub": {
+    "message": "Đang lấy phụ đề..."
+  },
+  "statusNoVideo": {
+    "message": "Không tìm thấy video"
+  },
+  "statusEmptySub": {
+    "message": "Phụ đề trống"
+  },
+  "statusReadyCount": {
+    "message": "Sẵn sàng ({total} câu)"
+  },
+  "scriptHeaderDefault": {
+    "message": "Kịch bản song ngữ"
+  },
+  "scriptHeaderLangs": {
+    "message": "Song ngữ ({src} → {dst})"
+  },
+  "errNoVideoId": {
+    "message": "Không tìm thấy Video ID"
+  },
+  "errNoSubtitles": {
+    "message": "Video này không có phụ đề"
+  },
+  "errFetchSubtitles": {
+    "message": "Không tải được phụ đề"
+  },
+  "errTimeoutSubtitles": {
+    "message": "Hết thời gian chờ lấy phụ đề"
+  },
+  "voiceGoogleStd": {
+    "message": "Google - Chuẩn"
+  },
+  "popupSubtitle": {
+    "message": "Thuyết minh AI thời gian thực & phụ đề song ngữ Karaoke"
+  },
+  "popupByokTitle": {
+    "message": "API Key tùy chọn (BYOK)"
+  },
+  "popupOpenaiLabel": {
+    "message": "OpenAI API Key (Giọng Nova)"
+  },
+  "popupGoogleLabel": {
+    "message": "Google Cloud API Key (WaveNet)"
+  },
+  "popupByokHint": {
+    "message": "Để trống để dùng giọng Edge Neural & Google miễn phí có sẵn."
+  },
+  "popupSaveBtn": {
+    "message": "Lưu cài đặt"
+  },
+  "popupSavedMsg": {
+    "message": "Đã lưu!"
+  },
+  "popupShortcutDub": {
+    "message": "Bật / Tắt thuyết minh"
+  },
+  "popupShortcutScript": {
+    "message": "Bật / Tắt bảng song ngữ"
   }
 }

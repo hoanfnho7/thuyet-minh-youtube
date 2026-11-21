@@ -1,8 +1,134 @@
 {
   "extName": {
-    "message": "Thuyết Minh YouTube"
+    "message": "YouTube AI Voice Dubber"
   },
   "extDescription": {
-    "message": "Real-time AI voice-over dubbing and bilingual karaoke script for YouTube videos."
+    "message": "Real-time subtitle translation and natural AI voice-over (dubbing) for YouTube videos with karaoke bilingual subtitles."
+  },
+  "closePanel": {
+    "message": "Close panel"
+  },
+  "sourceSubLabel": {
+    "message": "Source sub"
+  },
+  "sourceAutoDefault": {
+    "message": "Auto (Video original)"
+  },
+  "autoTag": {
+    "message": "Auto"
+  },
+  "targetLangLabel": {
+    "message": "Dub to"
+  },
+  "voiceLabel": {
+    "message": "Voice"
+  },
+  "speedLabel": {
+    "message": "Speech rate"
+  },
+  "speedDefaultBtn": {
+    "message": "Default"
+  },
+  "speedDefaultTooltip": {
+    "message": "Automatically match video speaking pace"
+  },
+  "speedAutoVal": {
+    "message": "Auto"
+  },
+  "origVolLabel": {
+    "message": "Original volume"
+  },
+  "btnStart": {
+    "message": "Start Dubbing (Alt+Shift+D)"
+  },
+  "btnStop": {
+    "message": "Stop Dubbing (Alt+Shift+D)"
+  },
+  "btnScript": {
+    "message": "Bilingual Script (Alt+Shift+V)"
+  },
+  "statusReady": {
+    "message": "Ready"
+  },
+  "statusStopped": {
+    "message": "Stopped"
+  },
+  "statusReloadRequired": {
+    "message": "Extension updated — Please reload the page"
+  },
+  "statusReading": {
+    "message": "Dubbing {current}/{total}"
+  },
+  "statusAdPaused": {
+    "message": "Paused (Ad playing)"
+  },
+  "statusPreparing": {
+    "message": "Preparing line {index}..."
+  },
+  "statusTranslatingInit": {
+    "message": "Translating opening lines..."
+  },
+  "statusSynthesizingInit": {
+    "message": "Generating AI voice..."
+  },
+  "statusFetchingSub": {
+    "message": "Fetching subtitles..."
+  },
+  "statusNoVideo": {
+    "message": "Video player not found"
+  },
+  "statusEmptySub": {
+    "message": "Subtitles are empty"
+  },
+  "statusReadyCount": {
+    "message": "Ready ({total} lines)"
+  },
+  "scriptHeaderDefault": {
+    "message": "Bilingual Script"
+  },
+  "scriptHeaderLangs": {
+    "message": "Bilingual ({src} → {dst})"
+  },
+  "errNoVideoId": {
+    "message": "Video ID not found"
+  },
+  "errNoSubtitles": {
+    "message": "No subtitles available for this video"
+  },
+  "errFetchSubtitles": {
+    "message": "Failed to load subtitles"
+  },
+  "errTimeoutSubtitles": {
+    "message": "Subtitle request timed out"
+  },
+  "voiceGoogleStd": {
+    "message": "Google - Standard"
+  },
+  "popupSubtitle": {
+    "message": "Real-time AI voice-over & bilingual karaoke for YouTube"
+  },
+  "popupByokTitle": {
+    "message": "Optional API Keys (BYOK)"
+  },
+  "popupOpenaiLabel": {
+    "message": "OpenAI API Key (Nova Voice)"
+  },
+  "popupGoogleLabel": {
+    "message": "Google Cloud API Key (WaveNet)"
+  },
+  "popupByokHint": {
+    "message": "Leave blank to use built-in free Neural & Google voices."
+  },
+  "popupSaveBtn": {
+    "message": "Save Settings"
+  },
+  "popupSavedMsg": {
+    "message": "Saved!"
+  },
+  "popupShortcutDub": {
+    "message": "Toggle Dubbing"
+  },
+  "popupShortcutScript": {
+    "message": "Toggle Bilingual Script"
   }
 }
