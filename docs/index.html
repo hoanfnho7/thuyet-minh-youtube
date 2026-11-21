@@ -290,6 +290,51 @@
     @media (max-width: 640px) {
       .nav-links a.hide-mobile { display: none; }
     }
+    .donate-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+      max-width: 680px;
+      margin: 0 auto;
+    }
+    .donate-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .donate-card h3 {
+      font-size: 16.5px;
+      margin-bottom: 8px;
+      color: #fff;
+    }
+    .donate-card p {
+      font-size: 13.5px;
+      color: var(--muted);
+      margin-bottom: 18px;
+    }
+    .qr-box {
+      background: #ffffff;
+      padding: 10px;
+      border-radius: 12px;
+      display: inline-block;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    }
+    .qr-box img {
+      width: 176px;
+      height: 176px;
+      display: block;
+    }
+    .qr-note {
+      margin-top: 12px;
+      font-size: 12px;
+      color: var(--muted);
+    }
   </style>
 </head>
 <body>
@@ -435,6 +480,29 @@
         </div>
       </div>
     </section>
+    <section id="donate" class="section">
+      <div class="container">
+        <h2 class="section-title" data-i18n="donTitle">Support the Project</h2>
+        <p class="section-sub" data-i18n="donSub">This extension is completely free and ad-free. If you find it useful, consider buying me a coffee!</p>
+        <div class="donate-grid">
+          <div class="donate-card">
+            <h3>☕ Ko-fi / PayPal</h3>
+            <p data-i18n="donKofiDesc">For international supporters (Card or PayPal, no account required).</p>
+            <a class="btn btn-primary" href="https://ko-fi.com/hoanfnho7" target="_blank" rel="noopener" data-i18n="donKofiBtn">
+              Support on Ko-fi
+            </a>
+          </div>
+          <div class="donate-card">
+            <h3>🇻🇳 VietQR (Vietnam Bank)</h3>
+            <p data-i18n="donQrDesc">Scan with any Vietnamese banking app or MoMo / ZaloPay.</p>
+            <div class="qr-box">
+              <img src="./vietqr.png" alt="VietQR Donate" loading="lazy" />
+            </div>
+            <div class="qr-note" data-i18n="donQrNote">Transfer note: Donate AI Dubber</div>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 
   <footer>
@@ -451,6 +519,12 @@
   <script>
     const I18N = {
       en: {
+        donTitle: "Support the Project",
+      donSub: "This extension is completely free and ad-free. If you find it useful, consider buying me a coffee!",
+      donKofiDesc: "For international supporters (Card or PayPal, no account required).",
+      donKofiBtn: "Support on Ko-fi",
+      donQrDesc: "Scan with any Vietnamese banking app or MoMo / ZaloPay.",
+      donQrNote: "Transfer note: Donate AI Dubber",
         navFeatures: "Features",
         navInstall: "Install",
         heroBadge: "● v1.0.0 — Free & Unlimited Duration",
@@ -489,6 +563,12 @@
         footerContact: "Contact Support"
       },
       vi: {
+        donTitle: "Ủng hộ phát triển dự án",
+      donSub: "Tiện ích hoàn toàn miễn phí và không quảng cáo. Nếu thấy hữu ích, bạn có thể mời mình một ly cà phê lấy động lực duy trì nhé!",
+      donKofiDesc: "Dành cho bạn bè quốc tế hoặc thanh toán qua PayPal / Thẻ Visa.",
+      donKofiBtn: "Ủng hộ qua Ko-fi",
+      donQrDesc: "Quét bằng ứng dụng ngân hàng bất kỳ hoặc ví MoMo / ZaloPay.",
+      donQrNote: "Nội dung CK: Donate AI Dubber",
         navFeatures: "Tính năng",
         navInstall: "Cài đặt",
         heroBadge: "● v1.0.0 — Miễn phí & Không giới hạn thời lượng",
