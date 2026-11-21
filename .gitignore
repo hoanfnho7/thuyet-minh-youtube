@@ -3,6 +3,8 @@ Thumbs.db
 *.zip
 *.crx
 *.pem
-deploy.ps1
+*.ps1
 .vscode/
 .idea/
+raw.png
+store-*.png
