@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YouTube AI Voice Dubber — Thuyết minh YouTube thời gian thực</title>
+  <meta name="description" content="Tiện ích mở rộng Chrome & Edge tự động dịch phụ đề và lồng tiếng video YouTube theo thời gian thực với giọng đọc AI tự nhiên, miễn phí, hỗ trợ Karaoke song ngữ." />
+  <style>
+    :root {
+      --bg: #090d16;
+      --surface: #111827;
+      --surface-2: #1e293b;
+      --border: rgba(255, 255, 255, 0.1);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --primary: #2563eb;
+      --primary-hover: #3b82f6;
+      --green: #10b981;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+    header {
+      border-bottom: 1px solid var(--border);
+      background: rgba(9, 13, 22, 0.85);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 16px;
+      color: #fff;
+      text-decoration: none !important;
+    }
+    .brand-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, #2563eb, #38bdf8);
+      display: grid;
+      place-items: center;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      font-size: 14px;
+    }
+    .nav-links a { color: var(--muted); }
+    .nav-links a:hover { color: #fff; text-decoration: none; }
+
+    .hero {
+      padding: 72px 0 56px;
+      text-align: center;
+      background: radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.14), transparent 60%);
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 14px;
+      border-radius: 999px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+      font-size: 12.5px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+    .hero h1 {
+      font-size: clamp(30px, 5vw, 48px);
+      font-weight: 800;
+      line-height: 1.18;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+    .hero h1 span {
+      background: linear-gradient(90deg, #38bdf8, #60a5fa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      max-width: 650px;
+      margin: 0 auto 30px;
+      color: var(--muted);
+      font-size: 16.5px;
+    }
+    .cta-group {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 22px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 14.5px;
+      transition: transform 0.15s ease, background 0.15s ease;
+      text-decoration: none !important;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 8px 24px rgba(37, 99, 235, 0.35);
+    }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-secondary {
+      background: var(--surface-2);
+      color: #fff;
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { background: #293548; }
+
+    .section { padding: 48px 0; }
+    .section-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+    .section-sub {
+      color: var(--muted);
+      text-align: center;
+      margin-bottom: 32px;
+      font-size: 14.5px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+    }
+    .card h3 {
+      font-size: 16px;
+      margin-bottom: 8px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card p {
+      font-size: 13.8px;
+      color: var(--muted);
+    }
+
+    .steps {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+    .step-item {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .step-item:last-child { margin-bottom: 0; }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(56, 189, 248, 0.16);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 13px;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .step-content h4 { font-size: 15px; margin-bottom: 3px; }
+    .step-content p { font-size: 13.8px; color: var(--muted); }
+    code, kbd {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 2px 6px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12.5px;
+      color: #e2e8f0;
+    }
+
+    .shortcuts {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 14px;
+      margin-top: 24px;
+    }
+    .shortcut-pill {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 13.5px;
+      color: var(--muted);
+    }
+
+    footer {
+      border-top: 1px solid var(--border);
+      margin-top: 56px;
+      padding: 28px 0;
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container nav">
+      <a class="brand" href="./">
+        <span class="brand-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 18v-6a9 9 0 0 1 18 0v6"></path>
+            <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path>
+          </svg>
+        </span>
+        <span>YouTube AI Voice Dubber</span>
+      </a>
+      <nav class="nav-links">
+        <a href="#features">Tính năng</a>
+        <a href="#install">Cài đặt</a>
+        <a href="./privacy.html">Privacy Policy</a>
+        <a href="https://github.com/hoanfnho7/thuyet-minh-youtube" target="_blank" rel="noopener">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container">
+        <div class="badge">● v1.0.0 — Miễn phí &amp; Không giới hạn thời lượng</div>
+        <h1>Thuyết minh video YouTube <span>thời gian thực</span> bằng giọng AI</h1>
+        <p>
+          Tự động dịch phụ đề và lồng tiếng trực tiếp trên trình duyệt Chrome, Edge, Brave.
+          Hỗ trợ đồng bộ nhịp podcast, hiển thị kịch bản song ngữ Karaoke và tự ngắt khi có quảng cáo.
+        </p>
+        <div class="cta-group">
+          <a class="btn btn-primary" href="https://github.com/hoanfnho7/thuyet-minh-youtube/releases/latest" target="_blank" rel="noopener">
+            ⬇ Tải bản cài đặt (.zip)
+          </a>
+          <a class="btn btn-secondary" href="https://github.com/hoanfnho7/thuyet-minh-youtube" target="_blank" rel="noopener">
+            Xem mã nguồn GitHub
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section id="features" class="section">
+      <div class="container">
+        <h2 class="section-title">Tính năng nổi bật</h2>
+        <p class="section-sub">Xử lý 100% phía trình duyệt, không thu thập dữ liệu, không cần đăng ký tài khoản.</p>
+        <div class="grid">
+          <div class="card">
+            <h3>🎙️ Giọng đọc AI tự nhiên</h3>
+            <p>Tích hợp sẵn giọng đọc Edge Neural (Nam Minh, Hoài My...) và Google Standard. Dùng ngay sau khi cài mà không cần nhập API Key.</p>
+          </div>
+          <div class="card">
+            <h3>⏱️ Fit-to-Pacing thông minh</h3>
+            <p>Tự động co giãn tốc độ đọc khớp với nhịp người nói — từ podcast nói chậm rãi đến video review tốc độ cao, kèm tính năng giảm âm lượng gốc (Audio Ducking).</p>
+          </div>
+          <div class="card">
+            <h3>🎤 Kịch bản song ngữ Karaoke</h3>
+            <p>Hiển thị đồng thời phụ đề gốc và bản dịch chạy sáng từng từ theo giọng đọc. Bấm vào bất kỳ câu thoại nào để tua nhanh tới đúng đoạn đó.</p>
+          </div>
+          <div class="card">
+            <h3>🎬 Hỗ trợ YouTube &amp; Shorts</h3>
+            <p>Tự động nhận diện ngôn ngữ gốc của video, hỗ trợ cả video dài lẫn YouTube Shorts và tự ngắt tiếng thuyết minh khi video chạy quảng cáo.</p>
+          </div>
+          <div class="card">
+            <h3>🔑 Tùy chọn BYOK cao cấp</h3>
+            <p>Hỗ trợ nhập API Key cá nhân (OpenAI TTS / Google Cloud WaveNet) trong popup nếu bạn muốn sử dụng thêm các giọng đọc trả phí chất lượng cao.</p>
+          </div>
+          <div class="card">
+            <h3>🔒 Riêng tư tuyệt đối</h3>
+            <p>Extension chỉ xin duy nhất quyền <code>storage</code> để lưu cài đặt cục bộ trên máy bạn. Không gửi lịch sử xem hay dữ liệu cá nhân về bất kỳ máy chủ nào.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="install" class="section">
+      <div class="container">
+        <h2 class="section-title">Hướng dẫn cài đặt</h2>
+        <p class="section-sub">Tương thích với Google Chrome, Microsoft Edge, Brave, Cốc Cốc.</p>
+        <div class="steps">
+          <div class="step-item">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <h4>Tải gói tiện ích về máy</h4>
+              <p>Bấm nút <strong>Tải bản cài đặt (.zip)</strong> ở trên (hoặc vào mục <a href="https://github.com/hoanfnho7/thuyet-minh-youtube/releases" target="_blank" rel="noopener">Releases</a>) và giải nén vào một thư mục cố định.</p>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <h4>Mở trang quản lý Extension</h4>
+              <p>Truy cập <code>chrome://extensions</code> trên Chrome hoặc <code>edge://extensions</code> trên Edge.</p>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <h4>Bật chế độ nhà phát triển &amp; nạp thư mục</h4>
+              <p>Bật công tắc <strong>Developer mode</strong> ở góc phải -> bấm <strong>Load unpacked</strong> -> chọn thư mục vừa giải nén ở bước 1.</p>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <h4>Sử dụng trên YouTube</h4>
+              <p>Mở video YouTube bất kỳ có phụ đề (CC), bấm vào biểu tượng <strong>Tai nghe</strong> ngay trên thanh điều khiển video (cạnh nút CC) và bấm <strong>Bật thuyết minh</strong>.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="shortcuts">
+          <div class="shortcut-pill"><kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd> &nbsp;Bật / Tắt thuyết minh</div>
+          <div class="shortcut-pill"><kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>V</kbd> &nbsp;Bật / Tắt bảng song ngữ Karaoke</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <div class="footer-links">
+        <a href="https://github.com/hoanfnho7/thuyet-minh-youtube" target="_blank" rel="noopener">GitHub Repository</a>
+        <a href="./privacy.html">Privacy Policy</a>
+        <a href="mailto:lhoangnhon09@gmail.com">Liên hệ hỗ trợ</a>
+      </div>
+      <p>© 2026 YouTube AI Voice Dubber · Open Source under MIT License</p>
+    </div>
+  </footer>
+</body>
+</html>
