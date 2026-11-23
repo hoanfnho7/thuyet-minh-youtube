@@ -8,3 +8,10 @@ Thumbs.db
 .idea/
 raw.png
 store-*.png
+
+# Python & AI Models (Large files > 100MB)
+__pycache__/
+*.pyc
+models/
+*.onnx
+*.tar.bz2

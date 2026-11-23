@@ -39,6 +39,18 @@
     voiceGoogleStd: "Google - Standard"
   };
 
+  const ASR_LANG_OPTIONS = [
+    { value: "__asr__:chinese", label: "AI Listen: Chinese (No Sub)", whisperLang: "chinese", iso: "zh" },
+    { value: "__asr__:english", label: "AI Listen: English (No Sub)", whisperLang: "english", iso: "en" },
+    { value: "__asr__:japanese", label: "AI Listen: Japanese (No Sub)", whisperLang: "japanese", iso: "ja" },
+    { value: "__asr__:korean", label: "AI Listen: Korean (No Sub)", whisperLang: "korean", iso: "ko" },
+    { value: "__asr__:auto", label: "AI Listen: Auto Detect", whisperLang: "auto", iso: "auto" }
+  ];
+
+  function getAsrOption(vssId) {
+    return ASR_LANG_OPTIONS.find((o) => o.value === vssId) || ASR_LANG_OPTIONS[0];
+  }
+
   function t(key, vars = {}) {
     let msg = "";
     try {
@@ -59,7 +71,7 @@
     return rawMsg || t("errFetchSubtitles");
   }
 
-const LANGUAGE_CONFIG = [
+  const LANGUAGE_CONFIG = [
     {
       code: "en",
       label: "English",
@@ -237,6 +249,8 @@ const LANGUAGE_CONFIG = [
     keepaliveInterval: null,
     sessionToken: 0,
     alreadyTranslated: false,
+    asrMode: false,
+    asrBridge: null,
     userInteractingScriptUntil: 0,
     karaokeRaf: null,
     karaokeOrigWords: [],
@@ -248,11 +262,12 @@ const LANGUAGE_CONFIG = [
   let domObserver = null;
   let injectTimer = null;
 
-  function getProviderSpeedFactor(voiceId, engine) {
-    if (engine === "google-free" || voiceId === "google-free") return 1.05;
-    if (voiceId.startsWith("google-wavenet-") || voiceId === "openai-nova") return 0.95;
-    return 0.9;
-  }
+function getProviderSpeedFactor(voiceId, engine) {
+  if (engine === "edge-local") return 1.0;
+  if (engine === "google-free" || voiceId === "google-free") return 1.05;
+  if (voiceId.startsWith("google-wavenet-") || voiceId === "openai-nova") return 0.95;
+  return 0.9;
+}
 
   function applyAudioSettings() {
     audioQueue.setVolume(1.0);
@@ -319,7 +334,8 @@ const LANGUAGE_CONFIG = [
     syncOriginalVideoVolume();
     highlightScriptItem(item.index);
     startKaraokeLoop(item.index, audio);
-    setStatus(t("statusReading", { current: item.index + 1, total: state.segments.length }), "#34d399");
+    const totalLabel = state.asrMode ? `${state.segments.length}+` : state.segments.length;
+    setStatus(t("statusReading", { current: item.index + 1, total: totalLabel }), "#34d399");
   };
 
   audioQueue.onChunkEnd = (item) => {
@@ -344,6 +360,7 @@ const LANGUAGE_CONFIG = [
     state.contextDead = true;
     state.enabled = false;
     state.sessionToken++;
+    stopAsrBridge();
     stopSyncLoop();
     stopKeepalive();
     stopAudioAll();
@@ -522,15 +539,22 @@ const LANGUAGE_CONFIG = [
     panel.style.top = `${Math.max(8, Math.min(maxTop, rect.top))}px`;
   }
 
-  function populateSourceTracks() {
-    const sel = document.getElementById("ytDubSourceLang");
-    if (!sel) return;
-    const opts = [el("option", { value: "", textContent: t("sourceAutoDefault") })];
+  function buildSourceTrackOptions() {
+    const opts = [
+      el("option", { value: "", textContent: t("sourceAutoDefault") }),
+      ...ASR_LANG_OPTIONS.map((o) => el("option", { value: o.value, textContent: o.label }))
+    ];
     for (const track of state.availableTracks) {
       const label = track.isAuto ? `${track.label} (${t("autoTag")})` : track.label;
       opts.push(el("option", { value: track.vssId, textContent: label }));
     }
-    sel.replaceChildren(...opts);
+    return opts;
+  }
+
+  function populateSourceTracks() {
+    const sel = document.getElementById("ytDubSourceLang");
+    if (!sel) return;
+    sel.replaceChildren(...buildSourceTrackOptions());
     sel.value = state.selectedSourceVssId || "";
   }
 
@@ -547,15 +571,13 @@ const LANGUAGE_CONFIG = [
     });
     const header = el("div", { className: "yt-dub-header", id: "ytDubDragHeader" }, [title, closeBtn]);
 
-    const sourceSelect = el("select", { id: "ytDubSourceLang", className: "yt-dub-select" }, [
-      el("option", { value: "", textContent: t("sourceAutoDefault") })
-    ]);
+    const sourceSelect = el("select", { id: "ytDubSourceLang", className: "yt-dub-select" }, buildSourceTrackOptions());
     const sourceRow = el("div", { className: "yt-dub-row" }, [
       el("label", { for: "ytDubSourceLang", textContent: t("sourceSubLabel") }),
       sourceSelect
     ]);
 
-const langSelect = el(
+    const langSelect = el(
       "select",
       { id: "ytDubLang", className: "yt-dub-select" },
       LANGUAGE_CONFIG.map((item) => el("option", { value: item.code, textContent: item.label }))
@@ -676,9 +698,13 @@ const langSelect = el(
         if (state.video) {
           const curT = state.video.currentTime;
           for (let i = 0; i < state.segments.length; i++) {
-            if (state.segments[i].end < curT - 0.3) state.enqueuedSet.add(i);
+            if (state.segments[i].end < curT - (state.asrMode ? 4.0 : 0.3)) {
+              state.enqueuedSet.add(i);
+            } else if (state.asrMode) {
+              prepareAudioForIndex(i, state.sessionToken);
+            }
           }
-          pipelineAhead(curT, state.sessionToken);
+          if (!state.asrMode) pipelineAhead(curT, state.sessionToken);
           syncPlayback();
         }
       }
@@ -839,10 +865,12 @@ const langSelect = el(
 
     const titleEl = document.getElementById("ytDubScriptTitle");
     if (titleEl) {
-      titleEl.textContent = t("scriptHeaderLangs", {
-        src: state.sourceLang.toUpperCase(),
-        dst: state.lang.toUpperCase()
-      });
+      titleEl.textContent = state.asrMode
+        ? `AI ASR (${state.sourceLang.toUpperCase()}) → ${state.lang.toUpperCase()}`
+        : t("scriptHeaderLangs", {
+            src: state.sourceLang.toUpperCase(),
+            dst: state.lang.toUpperCase()
+          });
     }
 
     const frag = document.createDocumentFragment();
@@ -1254,7 +1282,7 @@ const langSelect = el(
 
     for (let i = 0; i < state.segments.length; i++) {
       const seg = state.segments[i];
-      if (seg.end < currentTime - 1.0) continue;
+      if (seg.end < currentTime - (state.asrMode ? 4.0 : 1.0)) continue;
       if (seg.start > currentTime + 55) break;
       if (!state.translatedMap.has(i)) continue;
 
@@ -1270,7 +1298,9 @@ const langSelect = el(
 
   function pipelineAhead(currentTime, token) {
     if (!checkContextAlive()) return;
-    translateAheadBatch(currentTime, token);
+    if (!state.asrMode) {
+      translateAheadBatch(currentTime, token);
+    }
     synthesizeAhead(currentTime, token);
   }
 
@@ -1289,6 +1319,121 @@ const langSelect = el(
     state.activeAudio = null;
   }
 
+  // =========================================================================
+  // CHẾ ĐỘ NGHE & DỊCH TRỰC TIẾP (ASR CHO VIDEO KHÔNG CÓ SUB)
+  // =========================================================================
+  function stopAsrBridge() {
+    state.asrMode = false;
+    if (state.asrBridge) {
+      try {
+        state.asrBridge.stop();
+      } catch {}
+      state.asrBridge = null;
+    }
+  }
+
+  async function appendLiveAsrCue(cue, token) {
+    if (token !== state.sessionToken || !state.enabled || !state.asrMode) return;
+
+    const idx = state.segments.length;
+    state.segments.push({
+      text: cue.origText,
+      start: cue.start,
+      end: cue.end
+    });
+    state.translatedMap.set(idx, cue.text);
+
+    createScriptPanel();
+    const body = document.getElementById("ytDubScriptBody");
+    if (body) {
+      const origDiv = el("div", { className: "yt-dub-script-orig" });
+      fillKaraokeWords(origDiv, cue.origText, state.sourceLang);
+
+      const transDiv = el("div", { className: "yt-dub-script-trans" });
+      fillKaraokeWords(transDiv, cue.text, state.lang);
+
+      const item = el("div", { className: "yt-dub-script-item", "data-idx": String(idx) }, [
+        origDiv,
+        transDiv
+      ]);
+      item.onclick = () => {
+        if (state.video) {
+          state.video.currentTime = cue.start;
+          if (state.video.paused) state.video.play().catch(() => {});
+        }
+      };
+      body.appendChild(item);
+    }
+
+    // Nếu server.py đã trả kèm sẵn audio MP3 -> nạp thẳng vào cache & phát luôn
+    if (cue.audioDataUrl) {
+      try {
+        const blobUrl = await dataUrlToBlobUrl(cue.audioDataUrl);
+        if (token !== state.sessionToken) {
+          URL.revokeObjectURL(blobUrl);
+          return;
+        }
+        setAudioCache(idx, { status: "ready", blobUrl, engine: "edge-local", retried: false, startedAt: 0 });
+        syncPlayback();
+        return;
+      } catch {}
+    }
+
+    prepareAudioForIndex(idx, token);
+  }
+
+  async function startAsrSession(video, token, whisperLang = "chinese", isoLang = "zh") {
+    if (!window.AsrBridge) {
+      setStatus("ASR module not loaded", "#f87171");
+      return;
+    }
+
+    stopAsrBridge();
+    state.asrMode = true;
+    state.sourceLang = isoLang;
+    state.segments = [];
+    state.translatedMap.clear();
+    state.enqueuedSet.clear();
+    renderScriptList();
+
+    state.asrBridge = new window.AsrBridge({
+      sourceLang: whisperLang,
+      targetLang: state.lang,
+      voice: state.voice || "vi-VN-HoaiMyNeural",
+      rate: state.speed ? `${Math.round((state.speed - 1) * 100)}%` : "+25%",
+      translateFn: async (lines, targetLang) => {
+        const res = await safeSendMessage(
+          { action: "translateBatch", texts: lines, targetLang },
+          14000
+        );
+        if (res?.success && Array.isArray(res.data)) return res.data;
+        throw new Error("Translate failed");
+      },
+      onStatus: (st) => {
+        if (token !== state.sessionToken || !state.enabled) return;
+        if (st.status === "loading_model") {
+          setStatus(`Loading Whisper-small (${st.device?.toUpperCase() || "WASM"}): ${st.progress || 0}%`, "#fbbf24");
+        } else if (st.status === "ready") {
+          setStatus(`AI Listening [${whisperLang}] (${st.device?.toUpperCase()})...`, "#34d399");
+        } else if (st.status === "listening_speech") {
+          setStatus(`Dubbing live [${whisperLang}]...`, "#34d399");
+        } else if (st.status === "error") {
+          setStatus(`ASR Error: ${st.error || "Unknown"}`, "#f87171");
+        }
+      },
+      onCueReady: (cue) => appendLiveAsrCue(cue, token),
+      onError: (err) => {
+        if (token === state.sessionToken) {
+          setStatus(err?.message || "ASR capture error", "#f87171");
+        }
+      }
+    });
+
+    setStatus(`Starting AI Listen (${whisperLang})...`, "#fbbf24");
+    await state.asrBridge.start(video);
+    if (!video.paused) startSyncLoop();
+  }
+
   function syncPlayback() {
     if (!checkContextAlive()) return;
     if (!state.enabled || !state.video || !state.segments.length) return;
@@ -1296,11 +1441,13 @@ const langSelect = el(
     if (isAdPlaying()) {
       stopAudioAll();
       state.enqueuedSet.clear();
+      state.asrBridge?.capture?.setPaused(true);
       syncOriginalVideoVolume();
       setStatus(t("statusAdPaused"), "#fbbf24");
       return;
     }
 
+    state.asrBridge?.capture?.setPaused(false);
     syncOriginalVideoVolume();
 
     if (state.video.seeking) {
@@ -1319,15 +1466,17 @@ const langSelect = el(
     }
 
     audioQueue.resume();
+    const maxLateEnd = state.asrMode ? 6.0 : 1.2;
+    const maxLateStart = state.asrMode ? 8.0 : 2.6;
 
     for (let i = 0; i < state.segments.length; i++) {
       if (state.enqueuedSet.has(i)) continue;
       const seg = state.segments[i];
 
       if (seg.start > curT + PRE_ENQUEUE_AHEAD_SEC) break;
-      if (audioQueue.getQueueLength() >= 3) break;
+      if (audioQueue.getQueueLength() >= 1) break;
 
-      if (curT > seg.end + 1.2 || curT > seg.start + 2.6) {
+      if (curT > seg.end + maxLateEnd || curT > seg.start + maxLateStart) {
         state.enqueuedSet.add(i);
         continue;
       }
@@ -1480,6 +1629,7 @@ const langSelect = el(
   async function startSession() {
     if (!checkContextAlive()) return;
     const token = ++state.sessionToken;
+    stopAsrBridge();
     stopAudioAll();
     state.segments = [];
     state.translatedMap.clear();
@@ -1497,6 +1647,13 @@ const langSelect = el(
     applyAudioSettings();
     syncOriginalVideoVolume();
     startKeepalive();
+
+    // Nếu người dùng chủ động chọn chế độ AI Listen trên menu
+    if (state.selectedSourceVssId.startsWith("__asr__:")) {
+      const opt = getAsrOption(state.selectedSourceVssId);
+      await startAsrSession(video, token, opt.whisperLang, opt.iso);
+      return;
+    }
 
     const wasPlaying = !video.paused;
     setStatus(t("statusFetchingSub"), "#fbbf24");
@@ -1550,7 +1707,16 @@ const langSelect = el(
     } catch (err) {
       if (token !== state.sessionToken || state.contextDead) return;
       if (wasPlaying && video.paused) video.play().catch(() => {});
-      setStatus(mapSubError(err.message), "#f87171");
+
+const msg = err?.message || "";
+      // Tự động chuyển sang chế độ nghe AI tạm thời cho video này (không khóa cứng sang video sau)
+      if (msg === "ERR_NO_SUBTITLES" || msg.includes("không có phụ đề")) {
+        const sel = document.getElementById("ytDubSourceLang");
+        if (sel) sel.value = "__asr__:chinese";
+        await startAsrSession(video, token, "chinese", "zh");
+        return;
+      }
+      setStatus(mapSubError(msg), "#f87171");
     }
   }
 
@@ -1562,6 +1728,7 @@ const langSelect = el(
       startSession();
     } else {
       state.sessionToken++;
+      stopAsrBridge();
       stopSyncLoop();
       stopKeepalive();
       stopAudioAll();
@@ -1584,8 +1751,9 @@ const langSelect = el(
     }
   });
 
-  window.addEventListener("YT_DUB_NAVIGATION", () => {
+window.addEventListener("YT_DUB_NAVIGATION", () => {
     if (!checkContextAlive()) return;
+    stopAsrBridge();
     state.selectedSourceVssId = "";
     state.availableTracks = [];
     populateSourceTracks();
@@ -1594,6 +1762,7 @@ const langSelect = el(
     if (state.enabled) {
       setTimeout(startSession, 600);
     } else {
+      stopAsrBridge();
       stopSyncLoop();
       stopKeepalive();
       stopAudioAll();
@@ -1605,6 +1774,7 @@ const langSelect = el(
   });
 
   window.addEventListener("beforeunload", () => {
+    stopAsrBridge();
     stopSyncLoop();
     stopKeepalive();
     stopAudioAll();

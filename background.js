@@ -267,7 +267,7 @@
     return merged.buffer;
   }
 
-const WAVENET_MAP = {
+  const WAVENET_MAP = {
     vi: { code: "vi-VN", male: "vi-VN-Wavenet-D", female: "vi-VN-Wavenet-A" },
     en: { code: "en-US", male: "en-US-Wavenet-D", female: "en-US-Wavenet-F" },
     es: { code: "es-ES", male: "es-ES-Wavenet-B", female: "es-ES-Wavenet-C" },
@@ -383,12 +383,13 @@ const WAVENET_MAP = {
     }
   }
 
-  chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+  chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     // Keepalive ping để Chrome MV3 không kill Service Worker khi xem video dài
     if (msg.action === "ping") {
       sendResponse({ success: true });
       return false;
     }
+
     if (msg.action === "translateBatch") {
       chrome.storage.local.get(["byokConfig"], (res) => {
         const gKey = (res?.byokConfig?.googleApiKey || "").trim();
@@ -398,6 +399,7 @@ const WAVENET_MAP = {
       });
       return true;
     }
+
     if (msg.action === "tts") {
       synthesizeSpeech(msg.text, msg.voice, msg.lang)
         .then((result) => sendResponse({ success: true, data: result?.data || null, engine: result?.engine || "unknown" }))

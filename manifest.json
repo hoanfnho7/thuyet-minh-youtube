@@ -47,8 +47,18 @@
     {
       "matches": ["*://*.youtube.com/*", "*://youtube.com/*"],
       "css": ["content/content.css"],
-      "js": ["dubCore.js","content/contentScript.js"],
+      "js": [
+        "asr/asrBridge.js",
+        "dubCore.js",
+        "content/contentScript.js"
+      ],
       "run_at": "document_end"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["asr/vadWorklet.js"],
+      "matches": ["*://*.youtube.com/*", "*://youtube.com/*"]
     }
   ]
 }
