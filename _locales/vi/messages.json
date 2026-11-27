@@ -38,6 +38,9 @@
   "origVolLabel": {
     "message": "Âm lượng gốc"
   },
+  "autoStartLabel": {
+    "message": "Tự bật khi vào video"
+  },
   "btnStart": {
     "message": "Bật thuyết minh (Alt+Shift+D)"
   },

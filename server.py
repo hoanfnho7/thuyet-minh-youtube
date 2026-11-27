@@ -17,7 +17,7 @@ HOST = "127.0.0.1"
 PORT = 8765
 SAMPLE_RATE = 16000
 DEFAULT_TARGET_LANG = "vi"
-DEFAULT_VOICE = "vi-VN-HoaiMyNeural"
+DEFAULT_VOICE = "vi-VN-NamMinhNeural"
 DEFAULT_RATE = "+25%"
 
 HEADERS = {
@@ -125,7 +125,8 @@ async def translate_google(session: aiohttp.ClientSession, text: str, source_lan
 
 async def synthesize_edge_tts(text: str, voice: str = DEFAULT_VOICE, rate: str = DEFAULT_RATE) -> str:
     try:
-        communicate = edge_tts.Communicate(text, voice or DEFAULT_VOICE, rate=rate or DEFAULT_RATE)
+        safe_voice = voice if (voice and voice.endswith("Neural")) else DEFAULT_VOICE
+        communicate = edge_tts.Communicate(text, safe_voice, rate=rate or DEFAULT_RATE)
         audio_bytes = bytearray()
         async for chunk in communicate.stream():
             if chunk["type"] == "audio":

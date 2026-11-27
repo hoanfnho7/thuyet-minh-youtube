@@ -38,6 +38,9 @@
   "origVolLabel": {
     "message": "Original volume"
   },
+  "autoStartLabel": {
+    "message": "Auto-start on video"
+  },
   "btnStart": {
     "message": "Start Dubbing (Alt+Shift+D)"
   },

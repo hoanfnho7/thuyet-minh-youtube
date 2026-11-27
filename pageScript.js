@@ -249,11 +249,11 @@
     if (!videoId) throw new Error("Không tìm thấy Video ID");
 
     let tracks = [];
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 30; i++) {
       scanExisting(videoId);
       tracks = tracksStore.get(videoId) || [];
       if (tracks.length > 0) break;
-      await new Promise((r) => setTimeout(r, 200));
+      await new Promise((r) => setTimeout(r, 80));
     }
     if (!tracks.length) throw new Error("Video này không có phụ đề");
 
@@ -295,32 +295,44 @@
     let captured = timedtextStore.get(videoId);
     if (captured && isExpired(captured.url)) captured = null;
 
+    const alreadyInTarget = baseLang(sourceLang) === targetBase;
+    let segments = null;
+
+    // Fast-path: thử tải trực tiếp baseUrl trước (chỉ ~120ms, không cần đợi bật/tắt CC 2.5s)
     if (!captured) {
-      const player = getPlayer();
-      if (player) {
-        let prevTrack = null;
-        try {
-          prevTrack = player.getOption?.("captions", "track");
-        } catch {}
-        const since = Date.now() - 10;
-        try {
-          player.loadModule?.("captions");
-          player.setOption?.("captions", "track", { languageCode: sourceLang });
-        } catch {}
-        captured = await waitForTimedtext(videoId, since, 2500);
-        try {
-          player.setOption?.("captions", "track", prevTrack && prevTrack.languageCode ? prevTrack : {});
-        } catch {}
-      }
+      const directUrl = buildCaptionUrl(sourceTrack.baseUrl, null, {
+        lang: sourceLang,
+        kind: trackKind
+      });
+      segments = await fetchJson3(directUrl).catch(() => null);
     }
 
-    const alreadyInTarget = baseLang(sourceLang) === targetBase;
-    const origUrl = buildCaptionUrl(sourceTrack.baseUrl, captured?.url || null, {
-      lang: sourceLang,
-      kind: trackKind
-    });
+    if (!segments) {
+      if (!captured) {
+        const player = getPlayer();
+        if (player) {
+          let prevTrack = null;
+          try {
+            prevTrack = player.getOption?.("captions", "track");
+          } catch {}
+          const since = Date.now() - 10;
+          try {
+            player.loadModule?.("captions");
+            player.setOption?.("captions", "track", { languageCode: sourceLang });
+          } catch {}
+          captured = await waitForTimedtext(videoId, since, 2500);
+          try {
+            player.setOption?.("captions", "track", prevTrack && prevTrack.languageCode ? prevTrack : {});
+          } catch {}
+        }
+      }
 
-    const segments = await fetchJson3(origUrl);
+      const origUrl = buildCaptionUrl(sourceTrack.baseUrl, captured?.url || null, {
+        lang: sourceLang,
+        kind: trackKind
+      });
+      segments = await fetchJson3(origUrl);
+    }
 
     // Nếu video đã có sẵn bản dịch tay tiếng Việt (khác track gốc), tải song song về để dùng luôn (0 tốn quota dịch)
     let nativeTargetSegments = null;

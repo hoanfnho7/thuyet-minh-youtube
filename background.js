@@ -196,11 +196,35 @@
     return authInflight;
   }
 
+  const MS_MAX_CONCURRENT = 2;
+  let msActiveCount = 0;
+  const msWaitQueue = [];
+  let msLastStartAt = 0;
+
+  async function acquireMsSlot() {
+    while (msActiveCount >= MS_MAX_CONCURRENT) {
+      await new Promise((resolve) => msWaitQueue.push(resolve));
+    }
+    msActiveCount++;
+    const wait = Math.max(0, msLastStartAt + 80 - Date.now());
+    if (wait > 0) await sleep(wait);
+    msLastStartAt = Date.now();
+  }
+
+  function releaseMsSlot() {
+    msActiveCount = Math.max(0, msActiveCount - 1);
+    const next = msWaitQueue.shift();
+    if (next) next();
+  }
+
   async function ttsViaMicrosoftRest(ssml) {
     let lastErr = null;
-    for (let attempt = 0; attempt < 2; attempt++) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      let usedToken = null;
+      await acquireMsSlot();
       try {
         const auth = await getMicrosoftAuth();
+        usedToken = auth.token;
         const res = await fetchWithTimeout(
           `https://${auth.region}.tts.speech.microsoft.com/cognitiveservices/v1`,
           {
@@ -213,19 +237,29 @@
             },
             body: ssml
           },
-          5500
+          7500
         );
         if (res.ok) {
           const buf = await res.arrayBuffer();
           if (buf.byteLength > 0) return buf;
           throw new Error("Empty MS REST audio");
         }
-        if (res.status === 401 || res.status === 403) cachedAuth = null;
+        if (res.status === 401 || res.status === 403) {
+          if (cachedAuth?.token === usedToken) cachedAuth = null;
+        }
         lastErr = new Error(`MS REST HTTP ${res.status}`);
+        if (res.status === 429 || res.status >= 500) {
+          lastErr.isRateOrServer = true;
+        }
       } catch (err) {
         lastErr = err;
+      } finally {
+        releaseMsSlot();
       }
-      if (attempt < 1) await sleep(150);
+      if (attempt < 2) {
+        const baseDelay = lastErr?.isRateOrServer ? (attempt === 0 ? 550 : 1200) : (attempt === 0 ? 300 : 750);
+        await sleep(baseDelay + Math.floor(Math.random() * 150));
+      }
     }
     throw lastErr || new Error("MS REST failed");
   }
@@ -348,7 +382,7 @@
     return `data:audio/mpeg;base64,${btoa(binary)}`;
   }
 
-  async function synthesizeSpeech(rawText, voice = "vi-VN-NamMinhNeural", lang = "vi") {
+  async function synthesizeSpeech(rawText, voice = "vi-VN-NamMinhNeural", lang = "vi", allowFallback = true) {
     const text = sanitizeMinimal(rawText);
     if (!text) return null;
 
@@ -377,7 +411,10 @@
     try {
       const buf = await ttsViaMicrosoftRest(ssml);
       return { data: arrayBufferToBase64Audio(buf), engine: "edge-neural" };
-    } catch {
+    } catch (err) {
+      // Không tự nhảy sang giọng nữ Google ngay ở lần lỗi đầu tiên để tránh tự đổi giọng giữa chừng
+      if (!allowFallback) throw err;
+      console.warn(`[YT Dubber] Edge TTS (${voice}) failed after retries, falling back to Google TTS:`, err?.message || err);
       const buf = await ttsViaGoogleFree(text, lang);
       return { data: arrayBufferToBase64Audio(buf), engine: "google-free" };
     }
@@ -401,7 +438,8 @@
     }
 
     if (msg.action === "tts") {
-      synthesizeSpeech(msg.text, msg.voice, msg.lang)
+      const allowFallback = msg.allowFallback !== false;
+      synthesizeSpeech(msg.text, msg.voice, msg.lang, allowFallback)
         .then((result) => sendResponse({ success: true, data: result?.data || null, engine: result?.engine || "unknown" }))
         .catch((err) => sendResponse({ success: false, error: err.message }));
       return true;
