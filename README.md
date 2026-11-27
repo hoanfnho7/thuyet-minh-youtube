@@ -9,6 +9,18 @@
 </div>
 
 ---
+## 📸 Ảnh chụp giao diện thực tế (Screenshots)
+
+<div align="center">
+
+| 📊 ENG | ⚡ VIE |
+| :---: | :---: |
+| <img width="410" alt="eng" src="https://github.com/user-attachments/assets/43bc4299-2c5c-4664-a326-2df1d1cc191d" /> | <img width="410" alt="vie" src="https://github.com/user-attachments/assets/4a10affe-4d39-4ac5-b54f-a1834586191c" /> |
+
+
+</div>
+
+---
 
 ## 🇺🇸 English
 
