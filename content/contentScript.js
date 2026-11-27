@@ -15,6 +15,7 @@
     speedDefaultTooltip: "Automatically match video speaking pace",
     speedAutoVal: "Auto",
     origVolLabel: "Original volume",
+    autoStartLabel: "Auto-start on video",
     btnStart: "Start Dubbing (Alt+Shift+D)",
     btnStop: "Stop Dubbing (Alt+Shift+D)",
     btnScript: "Bilingual Script (Alt+Shift+V)",
@@ -220,6 +221,10 @@ const LANGUAGE_CONFIG = [
     autoSpeed: true,
     speed: 1.25,
     origVolume: 0.25,
+    autoStart: false,
+    preparingSession: false,
+    savedPrevMuted: null,
+    storageLoaded: false,
     hasOpenAiKey: false,
     hasGoogleKey: false,
     segments: [],
@@ -339,11 +344,20 @@ const LANGUAGE_CONFIG = [
     return false;
   }
 
+  function endPreparing(video = state.video) {
+    state.preparingSession = false;
+    if (video && state.savedPrevMuted !== null) {
+      video.muted = state.savedPrevMuted;
+    }
+    state.savedPrevMuted = null;
+  }
+
   function handleContextInvalidated() {
     if (state.contextDead) return;
     state.contextDead = true;
     state.enabled = false;
     state.sessionToken++;
+    endPreparing();
     stopSyncLoop();
     stopKeepalive();
     stopAudioAll();
@@ -433,6 +447,10 @@ const LANGUAGE_CONFIG = [
     return svg;
   }
 
+  function isWatchOrShortsPage() {
+    return location.pathname === "/watch" || location.pathname.startsWith("/shorts/");
+  }
+
   function loadStorage() {
     if (!checkContextAlive()) return;
     try {
@@ -446,14 +464,22 @@ const LANGUAGE_CONFIG = [
             voice: res.ytDubSettings.voice || fallbackVoice,
             autoSpeed: res.ytDubSettings.autoSpeed !== undefined ? Boolean(res.ytDubSettings.autoSpeed) : true,
             speed: res.ytDubSettings.speed || 1.25,
-            origVolume: res.ytDubSettings.origVolume ?? 0.25
+            origVolume: res.ytDubSettings.origVolume ?? 0.25,
+            autoStart: Boolean(res.ytDubSettings.autoStart)
           });
         }
+        state.storageLoaded = true;
         state.hasOpenAiKey = Boolean(res?.byokConfig?.openaiApiKey?.trim());
         state.hasGoogleKey = Boolean(res?.byokConfig?.googleApiKey?.trim());
         applyAudioSettings();
         populateVoices();
         syncUI();
+
+        if (state.autoStart && !state.enabled && isWatchOrShortsPage()) {
+          state.enabled = true;
+          syncUI();
+          startSession({ fromNavigation: true });
+        }
       });
     } catch {
       handleContextInvalidated();
@@ -469,7 +495,8 @@ const LANGUAGE_CONFIG = [
           voice: state.voice,
           autoSpeed: state.autoSpeed,
           speed: state.speed,
-          origVolume: state.origVolume
+          origVolume: state.origVolume,
+          autoStart: state.autoStart
         }
       });
     } catch {
@@ -612,6 +639,16 @@ const langSelect = el(
       volSlider
     ]);
 
+    const autoStartInput = el("input", {
+      id: "ytDubAutoStart",
+      className: "yt-dub-checkbox",
+      type: "checkbox"
+    });
+    const autoStartRow = el("div", { className: "yt-dub-toggle-row" }, [
+      el("label", { for: "ytDubAutoStart", textContent: t("autoStartLabel") }),
+      autoStartInput
+    ]);
+
     const mainBtn = el("button", {
       id: "ytDubMainBtn",
       className: "yt-dub-main-btn",
@@ -637,6 +674,7 @@ const langSelect = el(
       voiceRow,
       speedGroup,
       volGroup,
+      autoStartRow,
       mainBtn,
       scriptBtn,
       statusDiv
@@ -682,6 +720,12 @@ const langSelect = el(
           syncPlayback();
         }
       }
+    };
+
+    autoStartInput.onchange = (e) => {
+      if (!checkContextAlive()) return;
+      state.autoStart = Boolean(e.target.checked);
+      saveSettings();
     };
 
     speedSlider.oninput = (e) => {
@@ -984,6 +1028,9 @@ const langSelect = el(
     const vVal = document.getElementById("ytDubVolVal");
     if (vVal) vVal.textContent = `${Math.round(state.origVolume * 100)}%`;
 
+    const autoIn = document.getElementById("ytDubAutoStart");
+    if (autoIn) autoIn.checked = Boolean(state.autoStart);
+
     document.querySelectorAll(".yt-dub-player-btn, .yt-dub-shorts-btn").forEach((b) => {
       b.classList.toggle("active", state.enabled);
     });
@@ -1207,8 +1254,14 @@ const langSelect = el(
 
     try {
       const tts = await safeSendMessage(
-        { action: "tts", text: textOut, voice: state.voice, lang: state.lang },
-        12000
+        {
+          action: "tts",
+          text: textOut,
+          voice: state.voice,
+          lang: state.lang,
+          allowFallback: Boolean(existing?.retried)
+        },
+        16000
       );
       if (token !== state.sessionToken) return false;
       if (!tts?.success || !tts.data) throw new Error(tts?.error || "TTS failed");
@@ -1250,7 +1303,7 @@ const langSelect = el(
         }
       }
     }
-    if (inflight >= 4) return;
+    if (inflight >= 3) return;
 
     for (let i = 0; i < state.segments.length; i++) {
       const seg = state.segments[i];
@@ -1263,7 +1316,7 @@ const langSelect = el(
         if (c?.status === "error") c.retried = true;
         prepareAudioForIndex(i, token);
         inflight++;
-        if (inflight >= 4) break;
+        if (inflight >= 3) break;
       }
     }
   }
@@ -1371,13 +1424,17 @@ const langSelect = el(
   }
 
   function onPlay() {
-    if (state.enabled && checkContextAlive()) {
-      syncOriginalVideoVolume();
-      audioQueue.resume();
-      startKeepalive();
-      startSyncLoop();
-      syncPlayback();
+    if (!state.enabled || !checkContextAlive()) return;
+    // Giữ video tạm dừng khi đang tải phụ đề & chuẩn bị câu đầu để tránh YouTube autoplay làm miss câu mở đầu
+    if (state.preparingSession && !isAdPlaying()) {
+      if (state.video && !state.video.paused) state.video.pause();
+      return;
     }
+    syncOriginalVideoVolume();
+    audioQueue.resume();
+    startKeepalive();
+    startSyncLoop();
+    syncPlayback();
   }
 
   function onPause() {
@@ -1387,11 +1444,13 @@ const langSelect = el(
   }
 
   function onSeeking() {
+    if (state.preparingSession) return;
     stopAudioAll();
     state.enqueuedSet.clear();
   }
 
   function onSeeked() {
+    if (state.preparingSession) return;
     if (!state.enabled || !state.video || !checkContextAlive()) return;
     const curT = state.video.currentTime;
     for (let i = 0; i < state.segments.length; i++) {
@@ -1434,6 +1493,17 @@ const langSelect = el(
     video.addEventListener("volumechange", onVolumeChange);
   }
 
+  async function waitForVideoElement(token, maxMs = 3000) {
+    const start = Date.now();
+    while (Date.now() - start < maxMs) {
+      if (token !== state.sessionToken || state.contextDead) return null;
+      const v = findVideo();
+      if (v) return v;
+      await new Promise((r) => setTimeout(r, 80));
+    }
+    return findVideo();
+  }
+
   async function prebufferInitialSegments(startTime, token) {
     const startIdx = state.segments.findIndex((s) => s.end >= startTime - 0.3);
     if (startIdx < 0) return;
@@ -1445,21 +1515,24 @@ const langSelect = el(
 
     setStatus(t("statusTranslatingInit"), "#fbbf24");
     if (!state.alreadyTranslated) {
-      const texts = targetIndices.map((i) => state.segments[i].text);
-      try {
-        const res = await safeSendMessage(
-          { action: "translateBatch", texts, targetLang: state.lang },
-          14000
-        );
-        if (token !== state.sessionToken) return;
-        if (res?.success && Array.isArray(res.data)) {
-          targetIndices.forEach((segIdx, pos) => {
-            const tr = res.data[pos] || state.segments[segIdx].text;
-            state.translatedMap.set(segIdx, tr);
-            updateScriptItemTranslation(segIdx, tr);
-          });
-        }
-      } catch {}
+      const missingIndices = targetIndices.filter((i) => !state.translatedMap.has(i));
+      if (missingIndices.length > 0) {
+        const texts = missingIndices.map((i) => state.segments[i].text);
+        try {
+          const res = await safeSendMessage(
+            { action: "translateBatch", texts, targetLang: state.lang },
+            14000
+          );
+          if (token !== state.sessionToken) return;
+          if (res?.success && Array.isArray(res.data)) {
+            missingIndices.forEach((segIdx, pos) => {
+              const tr = res.data[pos] || state.segments[segIdx].text;
+              state.translatedMap.set(segIdx, tr);
+              updateScriptItemTranslation(segIdx, tr);
+            });
+          }
+        } catch {}
+      }
     } else {
       targetIndices.forEach((segIdx) => {
         const text = state.segments[segIdx].text;
@@ -1471,15 +1544,18 @@ const langSelect = el(
     if (token !== state.sessionToken) return;
     setStatus(t("statusSynthesizingInit"), "#fbbf24");
 
-    await Promise.race([
-      Promise.all(targetIndices.slice(0, 2).map((i) => prepareAudioForIndex(i, token))),
-      new Promise((r) => setTimeout(r, 2500))
-    ]);
+    // Tạo song song 2 câu đầu, nhưng chỉ cần đợi câu đầu tiên sẵn sàng là phát ngay để khởi động siêu nhanh
+    const firstPromise = prepareAudioForIndex(targetIndices[0], token);
+    if (targetIndices.length > 1) {
+      prepareAudioForIndex(targetIndices[1], token);
+    }
+    await Promise.race([firstPromise, new Promise((r) => setTimeout(r, 3500))]);
   }
 
-  async function startSession() {
+  async function startSession({ fromNavigation = false } = {}) {
     if (!checkContextAlive()) return;
     const token = ++state.sessionToken;
+    endPreparing();
     stopAudioAll();
     state.segments = [];
     state.translatedMap.clear();
@@ -1488,17 +1564,34 @@ const langSelect = el(
     state.enqueuedSet.clear();
     clearAudioCache();
 
-    const video = findVideo();
+    const video = await waitForVideoElement(token, fromNavigation ? 3000 : 800);
+    if (token !== state.sessionToken || state.contextDead) return;
     if (!video) {
       setStatus(t("statusNoVideo"), "#f87171");
       return;
     }
     bindVideoEvents(video);
     applyAudioSettings();
-    syncOriginalVideoVolume();
     startKeepalive();
 
-    const wasPlaying = !video.paused;
+    // Nếu đang chiếu quảng cáo khi vừa vào video -> đợi quảng cáo kết thúc rồi mới tải & thuyết minh video chính
+    if (isAdPlaying()) {
+      setStatus(t("statusAdPaused"), "#fbbf24");
+      while (isAdPlaying()) {
+        if (token !== state.sessionToken || state.contextDead || !state.enabled) return;
+        await new Promise((r) => setTimeout(r, 300));
+      }
+    }
+
+    const wasPlaying = fromNavigation ? true : !video.paused;
+    // Nếu vừa vào video mới hoặc bấm Bật ngay trong 4.5s đầu -> neo về 0:00 để không bao giờ bị miss câu mở đầu
+    const anchorTime = fromNavigation || (wasPlaying && video.currentTime < 4.5) ? 0 : video.currentTime;
+
+    // Tạm dừng & tắt tiếng NGAY LẬP TỨC trước khi tải sub YouTube để video không chạy trôi qua mấy câu đầu
+    state.preparingSession = true;
+    if (state.savedPrevMuted === null) state.savedPrevMuted = video.muted;
+    video.muted = true;
+    if (!video.paused) video.pause();
     setStatus(t("statusFetchingSub"), "#fbbf24");
 
     try {
@@ -1528,16 +1621,25 @@ const langSelect = el(
       }
 
       if (!state.segments.length) {
+        endPreparing(video);
+        if (wasPlaying) video.play().catch(() => {});
         setStatus(t("statusEmptySub"), "#f87171");
         return;
       }
 
       renderScriptList();
 
-      if (wasPlaying) video.pause();
-      await prebufferInitialSegments(video.currentTime, token);
+      await prebufferInitialSegments(anchorTime, token);
       if (token !== state.sessionToken || state.contextDead) return;
 
+      // Tua gọn về đúng anchorTime (0:00 nếu vừa vào video) trước khi mở khóa phát
+      if (Math.abs(video.currentTime - anchorTime) > 0.35) {
+        try {
+          video.currentTime = anchorTime;
+        } catch {}
+      }
+
+      endPreparing(video);
       setStatus(t("statusReadyCount", { total: state.segments.length }), "#34d399");
       syncOriginalVideoVolume();
       if (wasPlaying) {
@@ -1545,12 +1647,18 @@ const langSelect = el(
       }
 
       if (!video.paused) startSyncLoop();
-      pipelineAhead(video.currentTime, token);
+      pipelineAhead(anchorTime, token);
       syncPlayback();
     } catch (err) {
+      endPreparing(video);
       if (token !== state.sessionToken || state.contextDead) return;
+      syncOriginalVideoVolume();
       if (wasPlaying && video.paused) video.play().catch(() => {});
       setStatus(mapSubError(err.message), "#f87171");
+    } finally {
+      if (token === state.sessionToken && state.preparingSession) {
+        endPreparing(video);
+      }
     }
   }
 
@@ -1562,6 +1670,7 @@ const langSelect = el(
       startSession();
     } else {
       state.sessionToken++;
+      endPreparing();
       stopSyncLoop();
       stopKeepalive();
       stopAudioAll();
@@ -1586,13 +1695,19 @@ const langSelect = el(
 
   window.addEventListener("YT_DUB_NAVIGATION", () => {
     if (!checkContextAlive()) return;
+    endPreparing();
     state.selectedSourceVssId = "";
     state.availableTracks = [];
     populateSourceTracks();
     injectPlayerControls();
 
-    if (state.enabled) {
-      setTimeout(startSession, 600);
+    if (state.enabled || state.autoStart) {
+      state.enabled = true;
+      syncUI();
+      // Dừng video ngay lập tức khi chuyển trang để YouTube không chạy trôi qua câu mở đầu
+      const v = findVideo();
+      if (v && !isAdPlaying() && !v.paused) v.pause();
+      setTimeout(() => startSession({ fromNavigation: true }), 120);
     } else {
       stopSyncLoop();
       stopKeepalive();
